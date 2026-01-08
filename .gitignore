@@ -1,0 +1,6 @@
+workflow/
+.gemini/
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db

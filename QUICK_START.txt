@@ -1,0 +1,134 @@
+╔═══════════════════════════════════════════════════════════════╗
+║     GLADDY 2.50-ASCENSION - QUICK START GUIDE                 ║
+╚═══════════════════════════════════════════════════════════════╝
+
+📦 INSTALLATION (2 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. BACKUP your old Gladdy (if you have one)
+   └─→ Rename Interface\AddOns\Gladdy to Gladdy.backup
+
+2. COPY the modified Gladdy folder
+   └─→ C:\Claude\Gladdy → Interface\AddOns\Gladdy
+
+3. DELETE !!!ClassicAPI completely (CRITICAL!)
+   └─→ Remove Interface\AddOns\!!!ClassicAPI
+   └─→ If ClassicAPI stays loaded, you'll get errors!
+
+4. Launch WoW Ascension and login
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ VERIFICATION (1 minute)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After login, look for these messages in chat:
+
+   [GladdyCompat] Initializing compatibility layer...
+   [GladdyCompat] Created C_CreatureInfo polyfill
+   [GladdyCompat] Created AuraUtil.FindAuraByName polyfill
+   [GladdyCompat] Compatibility layer initialized successfully
+   [Gladdy] === Initializing Gladdy v2.5 (Ascension Compatible) ===
+
+Then run this command:
+
+   /script GladdyValidate()
+
+Expected: All checks should show [PASS] (warnings are OK)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎮 TEST MODE (2 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   /gladdy
+   └─→ Click "Test Mode" checkbox
+
+You should see 5 arena frames with:
+   ✓ Enemy names (Swift, Vilden, Krymu, etc.)
+   ✓ Health/power bars
+   ✓ Class icons
+   ✓ Trinket icons
+   ✓ Cooldown icons
+
+Try:
+   ✓ Drag frames around (unlock first)
+   ✓ Toggle modules on/off
+   ✓ Change profile
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏟️  ARENA TEST (30+ minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Queue for Arena Skirmish (2v2 or 3v3)
+
+When match starts, check:
+   ✓ Enemy frames appear
+   ✓ Names/classes detected
+   ✓ Specs detected (watch for buffs like Ice Barrier)
+   ✓ Trinket CD tracked (2 min)
+   ✓ Major cooldowns show icons
+   ✓ Diminishing returns work
+   ✓ Cast bars detect enemy casts
+   ✓ Auras (buffs/debuffs) tracked
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ERROR: "GetSpecBuffs is nil"
+└─→ Constants_Wrath.lua didn't load
+└─→ Check lines 1-6 are commented out: --[[ if ( WOW_PROJECT... ]]
+└─→ Verify GladdyCompat.lua loads first in TOC
+
+ERROR: "C_CreatureInfo.GetClassInfo" nil
+└─→ GladdyCompat.lua not loading
+└─→ Check file exists in Gladdy folder
+└─→ Check TOC has "GladdyCompat.lua" BEFORE "embeds.xml"
+
+ERROR: Lua errors about AceConfig
+└─→ Make sure !!!ClassicAPI is completely removed
+└─→ Check AddOns folder has NO !!!ClassicAPI
+
+PROBLEM: Cooldowns not tracking
+└─→ Ascension may have different cooldown durations
+└─→ Enable debug: /run Gladdy.debug = true
+└─→ Check chat for spell detection messages
+
+PROBLEM: Spec detection fails
+└─→ Wildcard mode characters may not have spec buffs
+└─→ This is expected on classless builds
+└─→ Spec detection works on standard classes only
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ASCENSION_MIGRATION.md      - Full migration guide with detailed tests
+VALIDATE.lua                 - Diagnostic script (use /script GladdyValidate())
+GLADDY_ASCENSION_PORT_SUMMARY.md - Technical summary of all changes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 WHAT WAS CHANGED?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ REMOVED: Dependency on !!!ClassicAPI (60+ files, ~10K lines)
+✓ ADDED: GladdyCompat.lua (minimal ~200 line shim)
+✓ FIXED: Constants_Wrath.lua now loads on Ascension
+✓ ADDED: Debug logging for critical initialization
+✓ ADDED: Validation script for troubleshooting
+
+ONLY 3 APIs needed polyfills:
+  - C_CreatureInfo (class/race names)
+  - AuraUtil.FindAuraByName (aura search)
+  - WOW_PROJECT_* constants (environment detection)
+
+Everything else uses native Ascension 3.3.5 APIs!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Good luck in the arena! 🏆

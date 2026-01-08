@@ -1,0 +1,45 @@
+## Interface: 30300
+## Title: Gladdy
+## Version: 2.6-Ascension
+## Notes: The most powerful arena AddOn for WoW 3.3.5 (Ascension Compatible)
+## Author: XiconQoo, DnB_Junkee, Knall, Tsoukie
+## SavedVariables: GladdyXZ
+## OptionalDeps: SharedMedia, Blizzard_CombatLog, Blizzard_ArenaUI, Blizzard_CombatText
+
+GladdyCompat.lua
+
+embeds.xml
+
+Gladdy.lua
+Lang.lua
+Util.lua
+Frame.lua
+Options.lua
+Constants_shared.lua
+Constants_Wrath.lua
+Constants_BCC.lua
+ImportStrings.lua
+
+Modules\Announcements.lua
+Modules\Healthbar.lua
+Modules\Powerbar.lua
+Modules\Auras.lua
+Modules\Castbar.lua
+Modules\Classicon.lua
+Modules\Clicks.lua
+Modules\Diminishings.lua
+Modules\Highlight.lua
+Modules\TotemPlates.lua
+Modules\Trinket.lua
+Modules\Racial.lua
+Modules\Cooldowns.lua
+Modules\ArenaCountDown.lua
+Modules\BuffsDebuffs.lua
+Modules\VersionCheck.lua
+Modules\XiconProfiles.lua
+Modules\Pets.lua
+Modules\ExportImport.lua
+Modules\CombatIndicator.lua
+Modules\RangeCheck.lua
+Modules\ShadowsightTimer.lua
+EventListener.lua
