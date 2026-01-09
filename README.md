@@ -1,11 +1,3 @@
-> [!WARNING]
-> ## ⚠️ Ascension API Warning
-> **Project Ascension uses modified APIs compared to standard 3.3.5.**
->
-> This version of Gladdy is specifically patched to handle Ascension's custom `UnitCastingInfo`, `UnitChannelInfo`, and other API quirks. Do not update from other sources.
-
-<div align="center">
-
 # Gladdy (Ascension Edition)
 
 ![Version](https://img.shields.io/badge/version-v2.6--Ascension-blue.svg?style=for-the-badge)
