@@ -158,31 +158,163 @@
             servers.
         </div>
 
-        <div class="features">
+        <!-- Project Description -->
+        <h2 id="about">About This Project</h2>
+        <p>
+            PA-Gladdy is a specialized backport and optimization of the popular Gladdy arena addon, tailored
+            specifically for <strong>Project Ascension</strong> (Classless WoW).
+        </p>
+        <p>
+            While originally built for WotLK 3.3.5a, Ascension's unique server architecture (custom spells, modified
+            APIs, data delays) breaks standard 3.3.5 addons.
+            This version includes <strong>12 rounds of critical hotfixes</strong>, a custom compatibility layer
+            (replacing <code>!!!ClassicAPI</code>), and optimizations for Ascension's infinite class possibilities.
+        </p>
+
+        <div class="features-grid">
             <div class="feature-card">
-                <h3>⚔️ Ascension Ready</h3>
-                <p>Patched providing native compatibility. Fixes crashes related to <code>SetMask</code>,
-                    <code>UnitPhaseReason</code>, and cast bar detection.</p>
+                <h3>Ascension Native</h3>
+                <p>Polyfilled APIs (<code>C_Timer</code>, <code>RegisterUnitEvent</code>) and fixes for
+                    Ascension-specific data delays ensure smooth operation.</p>
             </div>
             <div class="feature-card">
-                <h3>🎯 Arena Frames</h3>
-                <p>Professional arena unit frames with health, power, and cast bar tracking. Updated to handle
-                    Ascension's custom API data.</p>
+                <h3>Arena Ready</h3>
+                <p>Fixes for frame duplication, health bar desyncs, and cast bar tracking make it purely
+                    competitive-grade.</p>
             </div>
             <div class="feature-card">
-                <h3>⏱️ Cooldown Tracking</h3>
-                <p>Track enemy trinkets, racials, and major cooldowns directly on the frame. Never miss a window.</p>
+                <h3>Taint Free</h3>
+                <p>Carefully patched to avoid tainting Blizzard's secure environment. Macros, spellbook, and action bars
+                    work perfectly.</p>
             </div>
             <div class="feature-card">
-                <h3>🛡️ DR Tracker</h3>
-                <p>Built-in Diminishing Returns tracker. Know exactly when your CC will land for full duration.</p>
+                <h3>Optimized Core</h3>
+                <p>Removed bloat and heavy dependencies. Includes custom <code>GladdyCompat</code> layer for maximum
+                    performance.</p>
             </div>
         </div>
 
-        <div class="credits">
-            <p>Maintained by <strong>Xurkon</strong> • Backported by <strong>Hutsh</strong></p>
-            <p>Original Gladdy by XiconQoo, DnB_Junkee, Knall, Tsoukie</p>
+        <h2 id="changelog">Full Changelog</h2>
+        <div class="changelog-entry">
+            <h3>v2.6-Ascension (Release)</h3>
+            <ul>
+                <li>Consolidated all previous hotfixes into a stable release.</li>
+                <li>Updated TOC version to 2.6-Ascension.</li>
+                <li>Added comprehensive documentation and GitHub Pages site.</li>
+            </ul>
         </div>
+
+        <div class="changelog-entry">
+            <h3>Round 11.6: Final Polish</h3>
+            <ul>
+                <li><strong>Debug Messages</strong>: Disabled all <code>GladdyCompat</code> debug spam for a clean chat
+                    window.</li>
+                <li><strong>Loading Message</strong>: Updated initialization output.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 11.5: Reset Cleanup</h3>
+            <ul>
+                <li><strong>API Order Fix</strong>: Fixed critical Lua errors where <code>UnitCastingInfo</code> return
+                    values were flipped.</li>
+                <li><strong>Dynamic Detection</strong>: Smart detection for spell cast return formats.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 11: Castbar Polling System</h3>
+            <ul>
+                <li><strong>Event Fix</strong>: Implemented polling system because <code>UNIT_SPELLCAST</code> events do
+                    not fire reliably on Ascension.</li>
+                <li><strong>Outcome</strong>: Enemy cast bars now appear reliably.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 10: Critical Arena Fixes</h3>
+            <ul>
+                <li><strong>RegisterUnitEvent Polyfill</strong>: Fixed cross-contamination of arena frame data
+                    (health/mana).</li>
+                <li><strong>Feign Death Fix</strong>: Rewrote detection to avoid <code>AuraUtil</code> errors.</li>
+                <li><strong>Kui Nameplates</strong>: Complete resolution of taint issues with Kui Nameplates.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 9: Frame Duplication & Taint</h3>
+            <ul>
+                <li>Fixed logic causing multiple frames to track the same unit.</li>
+                <li>Added initial taint protections.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 8: Nameplates & UnitPhaseReason</h3>
+            <ul>
+                <li>Fixed <code>UnitPhaseReason</code> nil errors.</li>
+                <li>Resolved nameplate visibility bugs after arena.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 7: Ascension Data Delays</h3>
+            <ul>
+                <li><strong>Retry Mechanism</strong>: Fixes "white bar" glitches by waiting for server data (Class/Race)
+                    to arrive.</li>
+                <li><strong>Health Safety</strong>: Prevents health bars from sticking at 0/0.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 6: Critical Taint Fix</h3>
+            <ul>
+                <li><strong>REMOVED</strong> global wrappers for <code>GetSpellInfo</code>/<code>GetItemInfo</code> to
+                    fix Secure Environment taint.</li>
+                <li>Restored functionality of Macros and Spellbook.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 5B: Complete SetMask Fixes</h3>
+            <ul>
+                <li>Fixed <code>SetMask</code> crashes across 8 modules (Cooldowns, Trinket, Racial, etc.).</li>
+                <li>Restored rendering of all icons.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Round 4: Frame Display (The Blocker)</h3>
+            <ul>
+                <li>Fixed <code>SetIgnoreParentScale</code> crash that prevented frames from appearing.</li>
+            </ul>
+        </div>
+
+        <div class="changelog-entry">
+            <h3>Rounds 1-3: Initial Layer</h3>
+            <ul>
+                <li>Polyfilled <code>C_Timer</code>, <code>GetPhysicalScreenSize</code>.</li>
+                <li>Replaced <code>!!!ClassicAPI</code> with lightweight <code>GladdyCompat.lua</code>.</li>
+                <li>Fixed constant errors for <code>LibClassAuras</code>.</li>
+            </ul>
+        </div>
+
+        <h2 id="download">Download</h2>
+        <p style="text-align: center;">
+            <a href="https://github.com/Xurkon/PA-Gladdy/releases/latest" class="btn">Download Latest Release</a>
+            <a href="https://github.com/Xurkon/PA-Gladdy" class="btn" style="background: #24292e;">View on GitHub</a>
+        </p>
+
+        <h2 id="credits">Credits</h2>
+        <p>
+            <strong>Original Gladdy Authors</strong>: XiconQoo, DnB_Junkee, Knall, Tsoukie<br>
+            <strong>Ascension Port</strong>: Hutsh (Initial Backport)<br>
+            <strong>Ascension Optimization</strong>: Xurkon (Critical Fixes, Taint Resolution, Polling System)
+        </p>
+
+        <footer>
+            <p>Not affiliated with Blizzard Entertainment or Project Ascension. Built for the community.</p>
+        </footer>
     </div>
 
 </body>
