@@ -1,8 +1,12 @@
 # Gladdy (Ascension Edition)
 
 ![Version](https://img.shields.io/badge/version-v2.6--Ascension-blue.svg?style=for-the-badge)
-![Game Version](https://img.shields.io/badge/Client-3.3.5a-green.svg?style=for-the-badge)
+![Downloads](https://img.shields.io/github/downloads/Xurkon/PA-Gladdy/total?style=for-the-badge&color=e67e22)
+[![Documentation](https://img.shields.io/badge/Documentation-View%20Docs-58a6ff?style=for-the-badge)](https://xurkon.github.io/PA-Gladdy/)
+[![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/Xurkon)
+[![PayPal](https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.me/Xurkon)
 ![License](https://img.shields.io/badge/License-GPL-blue.svg?style=for-the-badge)
+![Client](https://img.shields.io/badge/Client-3.3.5a-green.svg?style=for-the-badge)
 
 <br/>
 **The most powerful arena AddOn for WoW 3.3.5 - Optimized for Project Ascension**
