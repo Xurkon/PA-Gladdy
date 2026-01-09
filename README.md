@@ -42,6 +42,11 @@ Built-in DR tracker for all CC categories.
 - **Visualization**: Icons show current DR status (1/2, 1/4, Immune).
 - **Accuracy**: Timer resets automatically after 18s.
 
+### 🧩 Nameplate Compatibility
+Works with your favorite nameplate addon.
+- **Universal Support**: Compatible with NotPlater, Plater, KuiNameplates, TidyPlates, and more.
+- **Seamless Integration**: Replaces nameplates with totem icons only when needed, preserving your preferred UI for everything else.
+
 ## 📥 Installation
 
 1. Download the latest release.

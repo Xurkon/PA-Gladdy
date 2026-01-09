@@ -14,7 +14,15 @@ This changelog documents the complete history of changes, hotfixes, and optimiza
 
 ---
 
-## detailed Development History (Hotfix Rounds 1 - 11.6)
+---
+
+## Detailed Development History (Hotfix Rounds 1 - 12)
+
+### Round 12: TotemPlates Compatibility (The "One Plate for All" Update)
+- **Universal Nameplate Support**: Gladdy's Totem Plates now work seamlessly with **ALL** major nameplate addons (NotPlater, Plater, Kui_Nameplates, TidyPlates, NeatPlates, ThreatPlates, ElvUI, etc.).
+- **Smart Conflict Resolution**: Instead of disabling itself when another addon is found, Gladdy now smartly hides the addon's frame when a totem is detected and restores it afterwards.
+- **Fixed Options**: Resolved a Lua syntax error in `GetOptions()` that prevented the options menu from loading correctly.
+- **Kui_Nameplates**: Automatically disables Kui's internal TotemPlates module to prevent double-rendering.
 
 ### Round 11.6: Final Polish
 - **Debug Messages**: Disabled all `GladdyCompat` debug spam (11+ lines removed) for a clean chat window on login.

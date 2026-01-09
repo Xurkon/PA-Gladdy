@@ -148,25 +148,56 @@ function TotemPlates.OnEvent(self, event, ...)
 end
 
 function TotemPlates:Initialize()
-	-- Kui_Nameplates coexistence: If Kui is loaded, disable its TotemPlates module
-	-- This handles the case where Kui loads BEFORE Gladdy
+	-- Detect nameplate addons and set appropriate mode
+	-- Mode determines how we interact with nameplates
+
+	-- NotPlater: Works differently - has its own frame structure
+	-- We need to hook into NotPlater's frames instead
+	if IsAddOnLoaded("NotPlater") or IsAddOnLoaded("NotPlater-3.3.5") or IsAddOnLoaded("NotPlater-2.4.3") then
+		self.addon = "NotPlater"
+		-- NotPlater stores frames in NotPlater.frames table
+		-- We'll hook into those instead of raw nameplates
+	end
+
+	-- Plater (retail-style nameplate addon)
+	if IsAddOnLoaded("Plater") then
+		self.addon = "Plater"
+	end
+
+	-- NeatPlates / ThreatPlates
+	if IsAddOnLoaded("NeatPlates") then
+		self.addon = "NeatPlates"
+	end
+	if IsAddOnLoaded("ThreatPlates") then
+		self.addon = "ThreatPlates"
+	end
+
+	-- Kui_Nameplates: Can coexist if we disable Kui's TotemPlates module
 	if IsAddOnLoaded("Kui_Nameplates") then
+		self.addon = "Kui_Nameplates"
 		local kuiAddon = LibStub("AceAddon-3.0"):GetAddon("KuiNameplates", true)
-		if kuiAddon and kuiAddon.modules and kuiAddon.modules.TotemPlates then
-			local kuiTotemPlates = kuiAddon.modules.TotemPlates
-			if kuiTotemPlates:IsEnabled() then
-				kuiTotemPlates:Disable()
-				Gladdy:Print("Kui_Nameplates TotemPlates disabled: Gladdy TotemPlates active")
+		if kuiAddon then
+			-- Disable Kui's TotemPlates if it exists
+			if kuiAddon.modules and kuiAddon.modules.TotemPlates then
+				local kuiTotemPlates = kuiAddon.modules.TotemPlates
+				if kuiTotemPlates and kuiTotemPlates:IsEnabled() then
+					kuiTotemPlates:Disable()
+					Gladdy:Print("Kui_Nameplates TotemPlates disabled: Gladdy TotemPlates active")
+				end
 			end
 		end
 	end
 
-	if ( IsAddOnLoaded("TidyPlates") ) then
+	-- TidyPlates: We have special handling for this
+	if IsAddOnLoaded("TidyPlates") then
 		self.addon = "TidyPlates"
-	elseif ( IsAddOnLoaded("ElvUI") ) then
-		local E = unpack(ElvUI)
-		if ( E.private.nameplates.enable ) then
-			return
+	end
+
+	-- ElvUI: Only conflict if ElvUI nameplates are enabled
+	if IsAddOnLoaded("ElvUI") then
+		local E = ElvUI and unpack(ElvUI)
+		if E and E.private and E.private.nameplates and E.private.nameplates.enable then
+			self.addon = "ElvUI"
 		end
 	end
 
@@ -176,16 +207,39 @@ function TotemPlates:Initialize()
 end
 
 local function NameplateScanValid(self)
-	if ( self ) then
-		if ( TotemPlates.addon ) then
-			return TotemPlates:GetAddonFrame(self)
-		elseif ( not self:GetName() ) then
-			local _, obj = self:GetRegions()
-			if ( obj and obj:GetObjectType() == "Texture" ) then
-				return obj:GetTexture() == "Interface\\Tooltips\\Nameplate-Border"
-			end
+	if ( not self ) then
+		return false
+	end
+
+	-- For addon-managed nameplates, check for their specific frame markers
+	if ( TotemPlates.addon ) then
+		if ( TotemPlates.addon == "NotPlater" ) then
+			-- NotPlater marks its frames with npFrame
+			return self.npFrame or self.npHealthBar
+		elseif ( TotemPlates.addon == "Kui_Nameplates" ) then
+			return self.kui
+		elseif ( TotemPlates.addon == "TidyPlates" ) then
+			return self.extended
+		elseif ( TotemPlates.addon == "NeatPlates" or TotemPlates.addon == "ThreatPlates" ) then
+			return self.extended or self.carrier
+		elseif ( TotemPlates.addon == "Plater" ) then
+			return self.PlaterOnScreen or self.unitFrame
+		elseif ( TotemPlates.addon == "ElvUI" ) then
+			return self.UnitFrame
 		end
 	end
+
+	-- Default: Check for vanilla nameplate texture
+	if ( not self:GetName() ) then
+		local _, obj = self:GetRegions()
+		if ( obj and obj:GetObjectType() == "Texture" ) then
+			local tex = obj:GetTexture()
+			return tex == "Interface\\Tooltips\\Nameplate-Border" or
+			       tex == "Interface\\TargetingFrame\\UI-TargetingFrame-Flash"
+		end
+	end
+
+	return false
 end
 
 local function NameplateScan(...)
@@ -324,6 +378,11 @@ local function SettingRefresh(enabled, nameplate, ...)
 end
 
 function TotemPlates:UpdateFrameOnce()
+	-- If disabled due to incompatible addon, do nothing
+	if self.disabled then
+		return
+	end
+
 	-- Ascension compatibility: These CVars might not exist or have side effects
 	-- Protect with pcall to prevent errors
 	if ( Gladdy.db.npTotems and Gladdy.db.npTotemsShowEnemy ) then
@@ -449,59 +508,108 @@ end
 function TotemPlates:GetAddonFrame(nameplate)
 	if ( self.addon == "Kui_Nameplates" ) then
 		return nameplate.kui
-	elseif ( self.addon == "TidyPlates" ) then
-		return nameplate.extended
+	elseif ( self.addon == "TidyPlates" or self.addon == "NeatPlates" or self.addon == "ThreatPlates" ) then
+		return nameplate.extended or nameplate.carrier
+	elseif ( self.addon == "NotPlater" ) then
+		return nameplate.npFrame or nameplate
+	elseif ( self.addon == "Plater" ) then
+		return nameplate.unitFrame or nameplate
+	elseif ( self.addon == "ElvUI" ) then
+		return nameplate.UnitFrame or nameplate
 	else
 		return nameplate.gladdyTotemFrame
 	end
 end
 
 function TotemPlates:ToggleAddon(nameplate, show)
-	local addon = TotemPlates:GetAddonFrame(nameplate)
+	local totemFrame = nameplate.gladdyTotemFrame
+	if ( not totemFrame ) then
+		return
+	end
 
+	-- For third-party nameplate addons, we only hide/show their main frame
+	-- We don't try to manipulate individual elements as structures vary
 	if ( self.addon ) then
-		if ( addon ) then
-			local isKui = self.addon == "Kui_Nameplates"
-
-			if ( show ) then
-				addon.Show = nil
-
-				if ( isKui ) then
-					addon.currentAlpha = 1
-					addon.lastAlpha = 0
-					addon.DoShow = 1
+		local addonFrame = self:GetAddonFrame(nameplate)
+		if ( addonFrame and addonFrame ~= totemFrame ) then
+			if ( self.addon == "Kui_Nameplates" ) then
+				if ( show ) then
+					addonFrame.Show = nil
+					addonFrame.currentAlpha = 1
+					addonFrame.lastAlpha = 0
+					addonFrame.DoShow = 1
 				else
-					addon:Show()
+					addonFrame.currentAlpha = 1
+					addonFrame.lastAlpha = 1
+					addonFrame.DoShow = nil
+					addonFrame:Hide()
+					addonFrame.Show = TotemPlates.void
+				end
+			elseif ( self.addon == "NotPlater" ) then
+				-- NotPlater: Hide/show the main visual elements
+				-- NotPlater uses npHealthBar, npCastBar, etc.
+				if ( show ) then
+					if ( addonFrame.Show ) then
+						addonFrame.Show = nil
+					end
+					if ( addonFrame.SetAlpha ) then
+						addonFrame:SetAlpha(1)
+					end
+				else
+					if ( addonFrame.SetAlpha ) then
+						addonFrame:SetAlpha(0)
+					end
+				end
+			elseif ( self.addon == "TidyPlates" or self.addon == "NeatPlates" or self.addon == "ThreatPlates" ) then
+				if ( show ) then
+					addonFrame.Show = nil
+					if ( addonFrame.SetAlpha ) then
+						addonFrame:SetAlpha(1)
+					end
+					addonFrame:Show()
+				else
+					addonFrame:Hide()
+					addonFrame.Show = TotemPlates.void
+				end
+			elseif ( self.addon == "Plater" or self.addon == "ElvUI" ) then
+				if ( show ) then
+					addonFrame.Show = nil
+					addonFrame:Show()
+				else
+					addonFrame:Hide()
+					addonFrame.Show = TotemPlates.void
 				end
 			else
-				if ( isKui ) then
-					addon.currentAlpha = 1
-					addon.lastAlpha = 1
-					addon.DoShow = nil
+				-- Generic handling for unknown addons
+				if ( show ) then
+					addonFrame.Show = nil
+					pcall(addonFrame.Show, addonFrame)
+				else
+					pcall(addonFrame.Hide, addonFrame)
+					addonFrame.Show = TotemPlates.void
 				end
-
-				addon:Hide()
-				addon.Show = TotemPlates.void
 			end
 		end
+		return
+	end
+
+	-- Default nameplate handling (no addon)
+	if ( show ) then
+		if ( totemFrame.healthbar ) then totemFrame.healthbar:Show() end
+		if ( totemFrame.healthborder ) then totemFrame.healthborder:Show() end
+		if ( totemFrame.highlighttexture ) then totemFrame.highlighttexture:SetAlpha(1) end
+		if ( totemFrame.raidicon ) then totemFrame.raidicon:SetAlpha(1) end
+		if ( totemFrame.nametext ) then totemFrame.nametext:Show() end
+		if ( totemFrame.leveltext ) then totemFrame.leveltext:Show() end
 	else
-		if ( show ) then
-			addon.healthbar:Show()
-			addon.healthborder:Show()
-			addon.highlighttexture:SetAlpha(1)
-			addon.raidicon:SetAlpha(1)
-			addon.nametext:Show()
-			addon.leveltext:Show()
-		else
-			addon.healthbar:Hide()
-			addon.healthborder:Hide()
-			addon.highlighttexture:SetAlpha(0)
-			addon.mobicon:Hide()
-			addon.bossicon:Hide()
-			addon.raidicon:SetAlpha(0)
-			addon.nametext:Hide()
-			addon.leveltext:Hide()
-		end
+		if ( totemFrame.healthbar ) then totemFrame.healthbar:Hide() end
+		if ( totemFrame.healthborder ) then totemFrame.healthborder:Hide() end
+		if ( totemFrame.highlighttexture ) then totemFrame.highlighttexture:SetAlpha(0) end
+		if ( totemFrame.mobicon ) then totemFrame.mobicon:Hide() end
+		if ( totemFrame.bossicon ) then totemFrame.bossicon:Hide() end
+		if ( totemFrame.raidicon ) then totemFrame.raidicon:SetAlpha(0) end
+		if ( totemFrame.nametext ) then totemFrame.nametext:Hide() end
+		if ( totemFrame.leveltext ) then totemFrame.leveltext:Hide() end
 	end
 end
 
@@ -610,36 +718,52 @@ end
 ---------------------------------------------------
 
 function TotemPlates:GetOptions()
-	return {
+	local options = {
 		headerTotems = {
 			type = "header",
 			name = L["Totem Plates"],
 			order = 2,
 		},
-		npTotems = Gladdy:option({
-			type = "toggle",
-			name = L["Enabled"],
-			desc = L["Turns totem icons instead of nameplates on or off."],
-			order = 3,
-			width = 0.9,
-		}),
-		npTotemsShowFriendly = Gladdy:option({
-			type = "toggle",
-			name = L["Show friendly"],
-			desc = L["Turns totem icons instead of nameplates on or off."],
-			disabled = function() return not Gladdy.db.npTotems end,
-			order = 4,
-			width = 0.65,
-		}),
-		npTotemsShowEnemy = Gladdy:option({
-			type = "toggle",
-			name = L["Show enemy"],
-			desc = L["Turns totem icons instead of nameplates on or off."],
-			disabled = function() return not Gladdy.db.npTotems end,
-			order = 5,
-			width = 0.6,
-		}),
-		group = {
+	}
+
+	-- Show warning if disabled due to incompatible addon
+	if self.disabled and self.addon then
+		options.disabledWarning = {
+			type = "description",
+			name = "|cffff5555WARNING: Gladdy Totem Plates is disabled because " .. self.addon .. " is loaded.|r\n\nTo use Gladdy Totem Plates, disable " .. self.addon .. " or use its built-in totem features instead.\n\n",
+			order = 2.5,
+			fontSize = "medium",
+		}
+	end
+
+	options.npTotems = Gladdy:option({
+		type = "toggle",
+		name = L["Enabled"],
+		desc = L["Turns totem icons instead of nameplates on or off."],
+		order = 3,
+		width = 0.9,
+		disabled = function() return self.disabled end,
+	})
+
+	options.npTotemsShowFriendly = Gladdy:option({
+		type = "toggle",
+		name = L["Show friendly"],
+		desc = L["Turns totem icons instead of nameplates on or off."],
+		disabled = function() return not Gladdy.db.npTotems end,
+		order = 4,
+		width = 0.65,
+	})
+
+	options.npTotemsShowEnemy = Gladdy:option({
+		type = "toggle",
+		name = L["Show enemy"],
+		desc = L["Turns totem icons instead of nameplates on or off."],
+		disabled = function() return not Gladdy.db.npTotems end,
+		order = 5,
+		width = 0.6,
+	})
+
+	options.group = {
 			type = "group",
 			childGroups = "tree",
 			name = L["Frame"],
@@ -833,13 +957,16 @@ function TotemPlates:GetOptions()
 				},
 			},
 		},
-		npTotemColors = {
-			order = 50,
-			name = L["Customize Totems"],
-			type = "group",
-			childGroups = "tree",
-			disabled = function() return not Gladdy.db.npTotems end,
-			args = select(2, GetTotemColorDefaultOptions())
-		},
 	}
+
+	options.npTotemColors = {
+		order = 50,
+		name = L["Customize Totems"],
+		type = "group",
+		childGroups = "tree",
+		disabled = function() return not Gladdy.db.npTotems end,
+		args = select(2, GetTotemColorDefaultOptions())
+	}
+
+	return options
 end
