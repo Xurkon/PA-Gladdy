@@ -1,13 +1,21 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.6-Ascension
+**Current Version:** v2.7-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
 
 ---
 
-## v2.6-Ascension (Release)
+## v2.7-Ascension (Release)
+- **Universal Nameplate Support**: Gladdy's Totem Plates now work seamlessly with **ALL** major nameplate addons (NotPlater, Plater, Kui_Nameplates, TidyPlates, NeatPlates, ThreatPlates, ElvUI, etc.).
+- **Smart Conflict Resolution**: Instead of disabling itself when another addon is found, Gladdy now smartly hides the addon's frame when a totem is detected and restores it afterwards.
+- **Fixed Options**: Resolved a Lua syntax error in `GetOptions()` that prevented the options menu from loading correctly.
+- **Kui_Nameplates**: Automatically disables Kui's internal TotemPlates module to prevent double-rendering.
+
+---
+
+## v2.6-Ascension (Stable)
 - Consolidated all previous hotfixes into a stable release.
 - Updated TOC version to 2.6-Ascension.
 - Added comprehensive documentation and GitHub Pages site.
