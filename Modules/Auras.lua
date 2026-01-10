@@ -69,6 +69,101 @@ function Auras:Initialize()
 
 	self.auras = Gladdy:GetImportantAuras()
 
+	-- Create reverse lookup by spell ID for Ascension compatibility
+	-- This allows detection even when GetSpellInfo returns different names
+	self.aurasByID = {}
+	for spellName, auraData in pairs(self.auras) do
+		if auraData.spellID then
+			self.aurasByID[auraData.spellID] = auraData
+		end
+	end
+
+	-- Fallback entries for critical spells that may not be returned by GetSpellInfo on Ascension
+	-- This ensures auras are detected even if GetSpellInfo returns nil for these spell IDs
+	local criticalSpells = {
+		-- Crowd Control (priority 40)
+		[33786] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 33786 }, -- Cyclone
+		[18658] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 18658 }, -- Hibernate
+		[14309] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 14309 }, -- Freezing Trap
+		[60210] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 60210 }, -- Freezing Arrow
+		[6770] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 6770 }, -- Sap
+		[2094] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 2094 }, -- Blind
+		[5782] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 5782 }, -- Fear
+		[47860] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 47860 }, -- Death Coil
+		[6358] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 6358 }, -- Seduction
+		[5484] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 5484 }, -- Howl of Terror
+		[5246] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 5246 }, -- Intimidating Shout
+		[8122] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 8122 }, -- Psychic Scream
+		[64044] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 64044 }, -- Psychic Horror
+		[12826] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 12826 }, -- Polymorph
+		[51514] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 51514 }, -- Hex
+		[18647] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 18647 }, -- Banish
+		[605] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 605 }, -- Mind Control
+		[14327] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 14327 }, -- Scare Beast
+		-- Stuns (priority 40)
+		[8983] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 8983 }, -- Bash
+		[1833] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 1833 }, -- Cheap Shot
+		[8643] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 8643 }, -- Kidney Shot
+		[1776] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 1776 }, -- Gouge
+		[44572] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 44572 }, -- Deep Freeze
+		[49012] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 49012 }, -- Wyvern Sting
+		[19503] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 19503 }, -- Scatter Shot
+		[49803] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 49803 }, -- Pounce
+		[49802] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 49802 }, -- Maim
+		[10308] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 10308 }, -- Hammer of Justice
+		[20066] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 20066 }, -- Repentance
+		[46968] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 46968 }, -- Shockwave
+		[49203] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 49203 }, -- Hungering Cold
+		[47481] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 47481 }, -- Gnaw
+		[47847] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 47847 }, -- Shadowfury
+		[20549] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 20549 }, -- War Stomp
+		[7922] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 7922 }, -- Charge Stun
+		[25274] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 25274 }, -- Intercept Stun
+		[12809] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 12809 }, -- Concussion Blow
+		[19577] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 19577 }, -- Intimidation
+		[31661] = { track = AURA_TYPE_DEBUFF, priority = 40, spellID = 31661 }, -- Dragon's Breath
+		-- Roots (priority 30)
+		[26989] = { track = AURA_TYPE_DEBUFF, priority = 30, spellID = 26989 }, -- Entangling Roots
+		[42917] = { track = AURA_TYPE_DEBUFF, priority = 30, spellID = 42917 }, -- Frost Nova
+		[33395] = { track = AURA_TYPE_DEBUFF, priority = 30, spellID = 33395 }, -- Freeze
+		[16979] = { track = AURA_TYPE_DEBUFF, priority = 30, spellID = 16979 }, -- Feral Charge
+		[23694] = { track = AURA_TYPE_DEBUFF, priority = 30, spellID = 23694 }, -- Improved Hamstring
+		[64695] = { track = AURA_TYPE_DEBUFF, priority = 30, spellID = 64695 }, -- Earthgrab
+		-- Silences (priority 20)
+		[18469] = { track = AURA_TYPE_DEBUFF, priority = 20, spellID = 18469 }, -- Improved Counterspell
+		[15487] = { track = AURA_TYPE_DEBUFF, priority = 20, spellID = 15487 }, -- Silence
+		[34490] = { track = AURA_TYPE_DEBUFF, priority = 20, spellID = 34490 }, -- Silencing Shot
+		[18425] = { track = AURA_TYPE_DEBUFF, priority = 20, spellID = 18425 }, -- Improved Kick
+		[49916] = { track = AURA_TYPE_DEBUFF, priority = 20, spellID = 49916 }, -- Strangulate
+		[24259] = { track = AURA_TYPE_DEBUFF, priority = 20, spellID = 24259 }, -- Spell Lock
+	}
+	-- Also create spellName to spellID mapping for when UnitAura doesn't return spellID
+	self.spellNameToID = {}
+	for spellID, fallbackData in pairs(criticalSpells) do
+		if not self.aurasByID[spellID] then
+			self.aurasByID[spellID] = fallbackData
+			-- Also ensure the auraListDefault has an entry for this spell
+			if not Gladdy.db.auraListDefault[tostring(spellID)] then
+				Gladdy.db.auraListDefault[tostring(spellID)] = {
+					enabled = true,
+					priority = fallbackData.priority,
+					track = fallbackData.track,
+				}
+			end
+		end
+		-- Add name-to-ID mapping (GetSpellInfo might work even if it failed at Constants load time)
+		local spellName = GetSpellInfo(spellID)
+		if spellName then
+			self.spellNameToID[spellName] = spellID
+		end
+	end
+	-- Also add mappings from the main auras table
+	for spellName, auraData in pairs(self.auras) do
+		if spellName and auraData.spellID then
+			self.spellNameToID[spellName] = auraData.spellID
+		end
+	end
+
 	self:RegisterMessage("JOINED_ARENA")
 	self:RegisterMessage("UNIT_DEATH")
 	self:RegisterMessage("AURA_GAIN")
@@ -602,17 +697,33 @@ function Auras:AURA_GAIN(unit, auraType, spellID, spellName, icon, duration, exp
 		return
 	end
 
-	if not self.auras[spellName] then
-		return
+	-- Try lookup by spell name first, then fallback to spell ID (Ascension compatibility)
+	local auraData = self.auras[spellName]
+	if not auraData and spellID then
+		auraData = self.aurasByID[spellID]
 	end
-	-- don't use spellId from combatlog, in case of different spellrank
-	if not Gladdy.db.auraListDefault[tostring(self.auras[spellName].spellID)]
-			or not Gladdy.db.auraListDefault[tostring(self.auras[spellName].spellID)].enabled
-			or Gladdy.db.auraListDefault[tostring(self.auras[spellName].spellID)].track ~= auraType then
+	-- If spellID is nil but we have a spell name, try to resolve spellID from name
+	if not auraData and spellName and self.spellNameToID[spellName] then
+		local resolvedID = self.spellNameToID[spellName]
+		auraData = self.aurasByID[resolvedID]
+		if auraData then
+			spellID = resolvedID -- Use the resolved ID for the rest of the function
+		end
+	end
+
+	if not auraData then
 		return
 	end
 
-	if (auraFrame.priority and auraFrame.priority > Gladdy.db.auraListDefault[tostring(self.auras[spellName].spellID)].priority) then
+	local auraSpellID = auraData.spellID
+	-- don't use spellId from combatlog, in case of different spellrank
+	if not Gladdy.db.auraListDefault[tostring(auraSpellID)]
+			or not Gladdy.db.auraListDefault[tostring(auraSpellID)].enabled
+			or Gladdy.db.auraListDefault[tostring(auraSpellID)].track ~= auraType then
+		return
+	end
+
+	if (auraFrame.priority and auraFrame.priority > Gladdy.db.auraListDefault[tostring(auraSpellID)].priority) then
 		return
 	end
 	auraFrame.startTime = expirationTime - duration
@@ -620,8 +731,8 @@ function Auras:AURA_GAIN(unit, auraType, spellID, spellName, icon, duration, exp
 	auraFrame.name = spellName
 	auraFrame.spellID = spellID
 	auraFrame.timeLeft = spellID == 8178 and 45 or expirationTime - GetTime()
-	auraFrame.priority = Gladdy.db.auraListDefault[tostring(self.auras[spellName].spellID)].priority
-	auraFrame.icon:SetTexture(Gladdy:GetImportantAuras()[GetSpellInfo(self.auras[spellName].spellID)] and Gladdy:GetImportantAuras()[GetSpellInfo(self.auras[spellName].spellID)].texture or icon)
+	auraFrame.priority = Gladdy.db.auraListDefault[tostring(auraSpellID)].priority
+	auraFrame.icon:SetTexture(auraData.texture or icon)
 	auraFrame.track = auraType
 	auraFrame.active = true
 	auraFrame.icon.overlay:Show()

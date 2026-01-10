@@ -119,13 +119,14 @@ function Gladdy:SpotEnemy(unit, auraScan)
     if auraScan and not button.spec then
         Gladdy:SendMessage("AURA_FADE", unit, "HELPFUL")
         for n = 1, 30 do
-            local spellName, texture, count, dispelType, duration, expirationTime, unitCaster, _, _, spellID = UnitAura(unit, n, "HELPFUL")
+            -- WotLK 3.3.5 / Ascension signature includes 'rank' as 2nd return value
+            local spellName, rank, texture, count, dispelType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitAura(unit, n, "HELPFUL")
             if ( not spellName ) then
                 Gladdy:SendMessage("AURA_GAIN_LIMIT", unit, AURA_TYPE_BUFF, n - 1)
                 break
             end
 
-            if Gladdy.exceptionNames[spellID] then
+            if spellID and Gladdy.exceptionNames[spellID] then
                 spellName = Gladdy.exceptionNames[spellID]
             end
 
@@ -336,15 +337,19 @@ function EventListener:UNIT_AURA(unit, isFullUpdate, updatedAuras)
         local filter = (i == 1 and "HELPFUL" or "HARMFUL")
         local auraType = i == 1 and AURA_TYPE_BUFF or AURA_TYPE_DEBUFF
         for n = 1, 30 do
-            local spellName, texture, count, dispelType, duration, expirationTime, unitCaster, _, shouldConsolidate, spellID = UnitAura(unit, n, filter)
-            if ( not spellID ) then
+            -- WotLK 3.3.5 / Ascension signature includes 'rank' as 2nd return value
+            local spellName, rank, texture, count, dispelType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID = UnitAura(unit, n, filter)
+            -- Use spellName for loop termination (more reliable on Ascension)
+            if ( not spellName ) then
                 Gladdy:SendMessage("AURA_GAIN_LIMIT", unit, auraType, n - 1)
                 break
             end
-            if Gladdy.exceptionNames[spellID] then
+            if spellID and Gladdy.exceptionNames[spellID] then
                 spellName = Gladdy.exceptionNames[spellID]
             end
-            button.auras[spellID] = { auraType, spellID, spellName, texture, duration, expirationTime, count, dispelType }
+            -- Use spellID as key if available, otherwise use spellName (Ascension compatibility)
+            local auraKey = spellID or spellName
+            button.auras[auraKey] = { auraType, spellID, spellName, texture, duration, expirationTime, count, dispelType }
             if not button.spec and Gladdy.specBuffs[spellName] and unitCaster then
                 local unitPet = string_gsub(unit, "%d$", "pet%1")
                 if unitCaster and (UnitIsUnit(unit, unitCaster) or UnitIsUnit(unitPet, unitCaster)) then

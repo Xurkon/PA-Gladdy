@@ -124,23 +124,24 @@ if not _G.AuraUtil then
 	_G.AuraUtil = {}
 
 	-- FindAuraByName wrapper around vanilla UnitAura
+	-- WotLK 3.3.5 / Ascension signature: name, rank, icon, count, dispelType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellID
 	function _G.AuraUtil.FindAuraByName(auraName, unit, filter)
 		if not auraName or not unit then return nil end
 
 		-- Iterate through auras manually using UnitAura
 		local i = 1
 		while true do
-			local name, icon, count, dispelType, duration, expirationTime, unitCaster, isStealable,
-				  nameplateShowPersonal, spellID = UnitAura(unit, i, filter)
+			local name, rank, icon, count, dispelType, duration, expirationTime, unitCaster, isStealable,
+				  shouldConsolidate, spellID = UnitAura(unit, i, filter)
 
 			if not name then
 				break -- No more auras
 			end
 
 			if name == auraName then
-				-- Return in the format expected by AuraUtil.FindAuraByName
+				-- Return in the format expected by AuraUtil.FindAuraByName (retail format without rank)
 				return name, icon, count, dispelType, duration, expirationTime, unitCaster,
-					   isStealable, nameplateShowPersonal, spellID
+					   isStealable, shouldConsolidate, spellID
 			end
 
 			i = i + 1
@@ -158,13 +159,14 @@ else
 
 			local i = 1
 			while true do
-				local name, icon, count, dispelType, duration, expirationTime, unitCaster, isStealable,
-					  nameplateShowPersonal, spellID = UnitAura(unit, i, filter)
+				-- WotLK 3.3.5 / Ascension signature includes 'rank' as 2nd return value
+				local name, rank, icon, count, dispelType, duration, expirationTime, unitCaster, isStealable,
+					  shouldConsolidate, spellID = UnitAura(unit, i, filter)
 
 				if not name then break end
 				if name == auraName then
 					return name, icon, count, dispelType, duration, expirationTime, unitCaster,
-						   isStealable, nameplateShowPersonal, spellID
+						   isStealable, shouldConsolidate, spellID
 				end
 
 				i = i + 1
