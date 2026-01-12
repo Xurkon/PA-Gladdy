@@ -199,13 +199,13 @@ function Diminishings:UpdateFrame(unit)
 		if (unit ~= "arena1") then
 			local previousUnit = "arena" .. str_gsub(unit, "arena", "") - 1
 			self.frames[unit]:ClearAllPoints()
-			if Gladdy.db.classIconGroupDirection == "RIGHT" then
+			if Gladdy.db.drGroupDirection == "RIGHT" then
 				self.frames[unit]:SetPoint("LEFT", self.frames[previousUnit], "RIGHT", 0, 0)
-			elseif Gladdy.db.classIconGroupDirection == "LEFT" then
+			elseif Gladdy.db.drGroupDirection == "LEFT" then
 				self.frames[unit]:SetPoint("RIGHT", self.frames[previousUnit], "LEFT", 0, 0)
-			elseif Gladdy.db.classIconGroupDirection == "UP" then
+			elseif Gladdy.db.drGroupDirection == "UP" then
 				self.frames[unit]:SetPoint("BOTTOM", self.frames[previousUnit], "TOP", 0, 0)
-			elseif Gladdy.db.classIconGroupDirection == "DOWN" then
+			elseif Gladdy.db.drGroupDirection == "DOWN" then
 				self.frames[unit]:SetPoint("TOP", self.frames[previousUnit], "BOTTOM", 0, 0)
 			end
 		end
@@ -340,6 +340,10 @@ function Diminishings:ResetUnit(unit)
 end
 
 function Diminishings:UNIT_DESTROYED(unit)
+	-- Don't reset if unit still exists (just stealthed, not actually gone)
+	if UnitExists(unit) then
+		return
+	end
 	Diminishings:ResetUnit(unit)
 end
 
@@ -457,9 +461,9 @@ function Diminishings:PrepareIcon(unit, lastIcon, drCat, spellID)
 	lastIcon:Show()
 end
 
-function Diminishings:AuraGain(unit, spellID)
+function Diminishings:AuraGain(unit, spellID, spellName)
 	local drFrame = self.frames[unit]
-	local drCat = DRData:GetSpellCategory(spellID)
+	local drCat = DRData:GetSpellCategory(spellID, spellName)
 	if (not drFrame or not drCat) then
 		return
 	end
@@ -487,9 +491,9 @@ function Diminishings:AuraGain(unit, spellID)
 	lastIcon.timeText:SetText("")
 end
 
-function Diminishings:AuraFade(unit, spellID)
+function Diminishings:AuraFade(unit, spellID, spellName)
 	local drFrame = self.frames[unit]
-	local drCat = DRData:GetSpellCategory(spellID)
+	local drCat = DRData:GetSpellCategory(spellID, spellName)
 	if (not drFrame or not drCat) then
 		return
 	end

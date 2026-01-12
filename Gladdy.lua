@@ -232,6 +232,13 @@ end
 
 ---------------------------
 
+-- Tables that store dynamic user data and should not be cleaned
+-- Note: customCooldownsString is a simple string, not a table, so it doesn't need to be here
+-- It's stored as a single key-value pair and won't be recursed into
+local DYNAMIC_DATA_TABLES = {
+	["customCooldowns"] = true,  -- Legacy, kept for compatibility
+}
+
 function Gladdy:DeleteUnknownOptions(tbl, refTbl, str)
 	if str == nil then
 		str = "Gladdy.db"
@@ -245,7 +252,10 @@ function Gladdy:DeleteUnknownOptions(tbl, refTbl, str)
 				Gladdy:Debug("INFO", "SavedVariable deleted:", str .. "." .. k, "type error!", "Expected", type(refTbl[k]), "but found", type(v))
 				tbl[k] = nil
 			elseif type(v) == "table" then
-				Gladdy:DeleteUnknownOptions(v, refTbl[k], str .. "." .. k)
+				-- Skip cleaning dynamic data tables that store user-added entries
+				if not DYNAMIC_DATA_TABLES[k] then
+					Gladdy:DeleteUnknownOptions(v, refTbl[k], str .. "." .. k)
+				end
 			end
 		end
 	end
@@ -282,6 +292,34 @@ function Gladdy:OnInitialize()
 	self.dbi.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
 	self.dbi.RegisterCallback(self, "OnProfileReset", "OnProfileReset")
 	self.db = self.dbi.profile
+
+	-- Register minimap button
+	local LDB = LibStub("LibDataBroker-1.1", true)
+	local LDBIcon = LibStub("LibDBIcon-1.0", true)
+	if LDB and LDBIcon then
+		local dataObject = LDB:NewDataObject("Gladdy", {
+			type = "launcher",
+			icon = "Interface\\Icons\\Ability_DualWield", -- PvP dual wield icon
+			OnClick = function(frame, button)
+				if button == "LeftButton" then
+					LibStub("AceConfigDialog-3.0"):Open("Gladdy")
+				elseif button == "RightButton" then
+					if Gladdy.frame and Gladdy.frame.testing then
+						Gladdy:Reset()
+						Gladdy:HideFrame()
+					else
+						Gladdy:ToggleFrame(3)
+					end
+				end
+			end,
+			OnTooltipShow = function(tt)
+				tt:AddLine("|cff0384fcGladdy|r")
+				tt:AddLine("|cffffffffLeft-Click:|r Open Options")
+				tt:AddLine("|cffffffffRight-Click:|r Toggle Test Frame")
+			end,
+		})
+		LDBIcon:Register("Gladdy", dataObject, self.db.minimap)
+	end
 
 	self.LSM = LibStub("LibSharedMedia-3.0")
 	self.LSM:Register("statusbar", "Gloss", "Interface\\AddOns\\Gladdy\\Images\\Gloss")

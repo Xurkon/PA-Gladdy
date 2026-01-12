@@ -63,7 +63,7 @@ function Gladdy:CreateFrame()
 
             local scale = f:GetEffectiveScale()
             self.db.x = f:GetLeft() * scale
-            self.db.y = (self.db.growDirection == "TOP" and f:GetBottom() or f:GetTop()) * scale
+            self.db.y = ((self.db.growDirection == "TOP" or self.db.growDirection == "BOTTOM_UP") and f:GetBottom() or f:GetTop()) * scale
         end
     end)
 
@@ -87,7 +87,7 @@ function Gladdy:CreateFrame()
 
             local scale = self.frame:GetEffectiveScale()
             self.db.x = self.frame:GetLeft() * scale
-            self.db.y = (self.db.growDirection == "TOP" and self.frame:GetBottom() or self.frame:GetTop()) * scale
+            self.db.y = ((self.db.growDirection == "TOP" or self.db.growDirection == "BOTTOM_UP") and self.frame:GetBottom() or self.frame:GetTop()) * scale
         end
     end)
     self.anchor:SetScript("OnClick", function()
@@ -162,6 +162,9 @@ function Gladdy:UpdateFrame()
         local growMiddle = self.db.growMiddle and teamSize > 0 and teamSize / 2 >= 1 and (teamSize - 1) * (singleFrameHeight / 2) or 0
         if (self.db.growDirection == "TOP") then
             self.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", self.db.x / scale, (self.db.y / scale) - growMiddle)
+        elseif self.db.growDirection == "BOTTOM_UP" then
+            -- Arena1 at top, but anchor from bottom (frame expands upward)
+            self.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", self.db.x / scale, (self.db.y / scale) - growMiddle)
         elseif self.db.growDirection == "BOTTOM" then
             self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db.x / scale, (self.db.y / scale) + growMiddle)
         else
@@ -174,7 +177,9 @@ function Gladdy:UpdateFrame()
     self.anchor:ClearAllPoints()
     if (self.db.growDirection == "TOP") then
         self.anchor:SetPoint("TOP", self.frame, "BOTTOM")
-    elseif self.growDirection == "BOTTOM" or self.growDirection == "RIGHT" then
+    elseif self.db.growDirection == "BOTTOM_UP" then
+        self.anchor:SetPoint("TOP", self.frame, "BOTTOM")
+    elseif self.db.growDirection == "BOTTOM" or self.db.growDirection == "RIGHT" then
         self.anchor:SetPoint("BOTTOM", self.frame, "TOP")
     else
         self.anchor:SetPoint("BOTTOM", self.frame, "TOP")
@@ -204,6 +209,15 @@ function Gladdy:UpdateFrame()
                 button.secure:SetPoint("TOPLEFT", button.healthBar, "TOPLEFT")
             end
         elseif (self.db.growDirection == "BOTTOM") then
+            if (i == 1) then
+                button:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
+                button.secure:SetPoint("TOPLEFT", button.healthBar, "TOPLEFT")
+            else
+                button:SetPoint("TOPLEFT", self.buttons["arena" .. (i - 1)], "BOTTOMLEFT", 0, -margin - self.db.bottomMargin)
+                button.secure:SetPoint("TOPLEFT", button.healthBar, "TOPLEFT")
+            end
+        elseif (self.db.growDirection == "BOTTOM_UP") then
+            -- Same as BOTTOM but frame is anchored from bottom
             if (i == 1) then
                 button:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
                 button.secure:SetPoint("TOPLEFT", button.healthBar, "TOPLEFT")
@@ -253,7 +267,7 @@ function Gladdy:UpdateFrame()
         --get margin
         local arena1Bottom
         local arena2Top
-        if (self.db.growDirection == "BOTTOM") then
+        if (self.db.growDirection == "BOTTOM" or self.db.growDirection == "BOTTOM_UP") then
             arena1Bottom = self.buttons["arena1"].secure:GetBottom()
             arena2Top = self.buttons["arena2"].secure:GetTop()
         elseif (self.db.growDirection == "TOP") then
@@ -527,6 +541,15 @@ function Gladdy:PositionButton(button, i, leftSize, rightSize, powerBarHeight, m
             button.secure:SetPoint("TOPLEFT", button.healthBar, "TOPLEFT")
         end
     elseif (self.db.growDirection == "BOTTOM") then
+        if (i == 1) then
+            button:SetPoint("TOPLEFT", self.frame, "TOPLEFT", leftSize, 0)
+            button.secure:SetPoint("TOPLEFT", button.healthBar, "TOPLEFT")
+        else
+            button:SetPoint("TOPLEFT", self.buttons["arena" .. (i - 1)], "BOTTOMLEFT", 0, -margin - self.db.bottomMargin)
+            button.secure:SetPoint("TOPLEFT", button.healthBar, "TOPLEFT")
+        end
+    elseif (self.db.growDirection == "BOTTOM_UP") then
+        -- Same as BOTTOM but frame is anchored from bottom
         if (i == 1) then
             button:SetPoint("TOPLEFT", self.frame, "TOPLEFT", leftSize, 0)
             button.secure:SetPoint("TOPLEFT", button.healthBar, "TOPLEFT")

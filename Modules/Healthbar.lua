@@ -162,26 +162,37 @@ end
 local rMax, gMax, bMax, rMid, gMid, bMid, rMin, gMin, bMin, rNow, gNow, bNow, percentage, factor, stealthAlpha
 function Healthbar:SetHealthStatusBarColor(unit, health, healthMax)
     local button = Gladdy.buttons[unit]
-    if not button or not health or not healthMax then
+    local healthBar = button and button.healthBar
+    if not button or not healthBar then
         return
     end
 
-    local healthBar = Gladdy.buttons[unit].healthBar
     if not healthBar.hp.oorFactor then
         healthBar.hp.oorFactor = 1
+    end
+
+    -- Handle stealth color FIRST (before health value checks)
+    -- This ensures stealth color is applied even if health values are not yet set
+    if healthBar.hp.stealth then
+        if Gladdy.STEALTH_DEBUG then
+            print("|cff00ff00[STEALTH COLOR]|r", unit, "applying stealth color")
+        end
+        stealthAlpha = Gladdy.db.healthBarStealthColor.a < Gladdy.db.healthBarBgColor.a and Gladdy.db.healthBarStealthColor.a or Gladdy.db.healthBarBgColor.a
+        healthBar.bg:SetVertexColor(Gladdy:SetColor(Gladdy.db.healthBarBgColor, nil, stealthAlpha))
+        healthBar.hp:SetStatusBarColor(Gladdy:SetColor(Gladdy.db.healthBarStealthColor))
+        return
+    end
+
+    -- For non-stealth coloring, we need valid health values
+    if not health or not healthMax then
+        return
     end
 
     healthBar.hp:SetMinMaxValues(0, healthMax)
     healthBar.hp:SetValue(health)
 
-    if healthBar.hp.stealth then
-        stealthAlpha = Gladdy.db.healthBarStealthColor.a < Gladdy.db.healthBarBgColor.a and Gladdy.db.healthBarStealthColor.a or Gladdy.db.healthBarBgColor.a
-        healthBar.bg:SetVertexColor(Gladdy:SetColor(Gladdy.db.healthBarBgColor, nil, stealthAlpha))
-        healthBar.hp:SetStatusBarColor(Gladdy:SetColor(Gladdy.db.healthBarStealthColor))
-        return
-    else
-        healthBar.bg:SetVertexColor(Gladdy:SetColor(Gladdy.db.healthBarBgColor))
-    end
+    -- Not stealthed - use normal background color
+    healthBar.bg:SetVertexColor(Gladdy:SetColor(Gladdy.db.healthBarBgColor))
 
     if not Gladdy.db.healthBarClassColored then
         if Gladdy.db.healthBarColoredByCurrentHp then
@@ -386,7 +397,14 @@ function Healthbar:ENEMY_STEALTH(unit, stealth)
     local healthBar = self.frames[unit]
     local button = Gladdy.buttons[unit]
     if (not healthBar or not button) then
+        if Gladdy.STEALTH_DEBUG then
+            print("|cffff0000[STEALTH HB]|r", unit, "no healthBar or button!")
+        end
         return
+    end
+
+    if Gladdy.STEALTH_DEBUG then
+        print("|cff00ffff[STEALTH HB]|r", unit, "stealth =", stealth, "hp.current =", healthBar.hp.current)
     end
 
     healthBar.hp.stealth = stealth
@@ -406,6 +424,10 @@ function Healthbar:UNIT_DEATH(unit)
 end
 
 function Healthbar:UNIT_DESTROYED(unit)
+    -- Don't show LEAVE if unit still exists (just stealthed, not actually gone)
+    if UnitExists(unit) then
+        return
+    end
     local healthBar = self.frames[unit]
     if (not healthBar) then
         return

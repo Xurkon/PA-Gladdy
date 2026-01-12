@@ -19,6 +19,12 @@ local Diminishings = Gladdy.modules["Diminishings"]
 
 local PVP_TRINKET, NS, EM, POM, FD
 
+-- Stealth spells for detection (populated in Initialize)
+local STEALTH_SPELLS = {}
+-- Spells that MAINTAIN stealth (clearing these = no longer stealthed)
+-- Vanish is NOT included because it's a temporary buff that fades into Stealth
+local STEALTH_AURAS = {}
+
 local EventListener = Gladdy:NewModule("EventListener", 101, {
     test = true,
 })
@@ -29,6 +35,48 @@ function EventListener:Initialize()
     EM = GetSpellInfo(16166)
     POM = GetSpellInfo(12043)
     FD = GetSpellInfo(5384)
+
+    -- Build stealth spells table for stealth detection
+    -- STEALTH_SPELLS = all spells that indicate going INTO stealth (used to prevent clearing stealth on cast)
+    STEALTH_SPELLS["Stealth"] = true
+    STEALTH_SPELLS["Vanish"] = true
+    STEALTH_SPELLS["Shadowmeld"] = true
+    STEALTH_SPELLS["Prowl"] = true
+    -- STEALTH_AURAS = buffs that MAINTAIN stealth (removing these = no longer stealthed)
+    -- Vanish is NOT here because it's a temporary buff that fades into regular Stealth
+    STEALTH_AURAS["Stealth"] = true
+    STEALTH_AURAS["Shadowmeld"] = true
+    STEALTH_AURAS["Prowl"] = true
+    -- Overkill = rogue talent that procs when entering stealth (reliable stealth indicator on Ascension)
+    STEALTH_SPELLS["Overkill"] = true
+    -- Master of Subtlety procs when LEAVING stealth, so we track it to know they WERE stealthed
+    -- (not added to STEALTH_SPELLS since it means they're OUT of stealth)
+    -- Add localized spell names
+    local stealthName = GetSpellInfo(1784)   -- Stealth
+    local vanishName = GetSpellInfo(1856)    -- Vanish
+    local shadowmeldName = GetSpellInfo(58984) -- Shadowmeld
+    local prowlName = GetSpellInfo(5215)     -- Prowl
+    if stealthName then
+        STEALTH_SPELLS[stealthName] = true
+        STEALTH_AURAS[stealthName] = true
+    end
+    if vanishName then STEALTH_SPELLS[vanishName] = true end  -- Vanish only in STEALTH_SPELLS, NOT STEALTH_AURAS
+    if shadowmeldName then
+        STEALTH_SPELLS[shadowmeldName] = true
+        STEALTH_AURAS[shadowmeldName] = true
+    end
+    if prowlName then
+        STEALTH_SPELLS[prowlName] = true
+        STEALTH_AURAS[prowlName] = true
+    end
+
+    -- Store for debug access
+    Gladdy.STEALTH_SPELL_NAMES = {
+        stealth = stealthName,
+        vanish = vanishName,
+        shadowmeld = shadowmeldName,
+        prowl = prowlName
+    }
 
     self:RegisterMessage("JOINED_ARENA")
 end
@@ -131,9 +179,13 @@ function Gladdy:SpotEnemy(unit, auraScan)
             end
 
             if Gladdy.specBuffs[spellName] and unitCaster then -- Check for auras that detect a spec
-                local unitPet = string_gsub(unit, "%d$", "pet%1")
-                if UnitIsUnit(unit, unitCaster) or UnitIsUnit(unitPet, unitCaster) then
-                    EventListener:DetectSpec(unit, Gladdy.specBuffs[spellName])
+                -- Detect spec on the CASTER of the buff, not just self-buffs
+                -- This allows detecting Disc priest when Grace/Divine Aegis appears on allies
+                for arenaUnit, arenaButton in pairs(Gladdy.buttons) do
+                    if not arenaButton.spec and UnitIsUnit(arenaUnit, unitCaster) then
+                        EventListener:DetectSpec(arenaUnit, Gladdy.specBuffs[spellName])
+                        break
+                    end
                 end
             end
             if Gladdy.cooldownBuffs[spellName] and unitCaster then -- Check for auras that detect used CDs (like Fear Ward)
@@ -152,11 +204,45 @@ function Gladdy:SpotEnemy(unit, auraScan)
     end
 end
 
-function EventListener:COMBAT_LOG_EVENT_UNFILTERED(...)
-    local _,eventType,_,sourceGUID,_,_,_,destGUID,_,_,_,spellID,spellName,spellSchool,extraSpellId,extraSpellName,extraSpellSchool = CombatLogGetCurrentEventInfo(...)
+-- Helper function to find arena unit by GUID (fallback for Ascension GUID format issues)
+local function FindArenaUnitByGUID(guid)
+    if not guid then return nil end
+    -- First try direct lookup
+    local unit = Gladdy.guids[guid]
+    if unit then return unit end
+    -- Fallback: compare with UnitGUID for each arena unit
+    for i = 1, Gladdy.curBracket or 5 do
+        local arenaUnit = "arena" .. i
+        if UnitExists(arenaUnit) and UnitGUID(arenaUnit) == guid then
+            -- Cache it for future lookups
+            Gladdy.guids[guid] = arenaUnit
+            return arenaUnit
+        end
+        local petUnit = "arenapet" .. i
+        if UnitExists(petUnit) and UnitGUID(petUnit) == guid then
+            Gladdy.guids[guid] = petUnit
+            return petUnit
+        end
+    end
+    return nil
+end
 
-    local srcUnit = Gladdy.guids[sourceGUID] -- can be a PET
-    local destUnit = Gladdy.guids[destGUID] -- can be a PET
+function EventListener:COMBAT_LOG_EVENT_UNFILTERED(...)
+    -- WotLK 3.3.5 / Ascension format (same as DiminishingReturns addon):
+    -- timestamp, event, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, spellId, spellName, ...
+    local timestamp, eventType, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, spellID, spellName, spellSchool, extraArg1, extraArg2, extraArg3 = ...
+
+    local srcUnit = FindArenaUnitByGUID(sourceGUID) -- can be a PET
+    local destUnit = FindArenaUnitByGUID(destGUID) -- can be a PET
+
+    -- DEBUG: Print DR-related events (now checks by name too)
+    if Gladdy.DR_DEBUG and eventType == "SPELL_AURA_APPLIED" then
+        local drCat = LibStub("DRList-1.0"):GetCategoryBySpellID(spellID, spellName)
+        if drCat then
+            print("|cff00ff00[DR DEBUG]|r", destName, spellID, spellName, "cat:", drCat, "unit:", destUnit or "NIL")
+        end
+    end
+
     if (Gladdy.db.shadowsightTimerEnabled and eventType == "SPELL_AURA_APPLIED" and spellID == 34709) then
         Gladdy.modules["Shadowsight Timer"]:AURA_GAIN(nil, nil, 34709)
     end
@@ -166,16 +252,16 @@ function EventListener:COMBAT_LOG_EVENT_UNFILTERED(...)
 
     if destUnit then
         -- diminish tracker
-        if Gladdy.buttons[destUnit] and Gladdy.db.drEnabled and extraSpellId == AURA_TYPE_DEBUFF then
+        -- Pass both spellID and spellName for Ascension compatibility (custom spell IDs)
+        if Gladdy.buttons[destUnit] and Gladdy.db.drEnabled then
             if (eventType == "SPELL_AURA_REMOVED") then
-                Diminishings:AuraFade(destUnit, spellID)
+                Diminishings:AuraFade(destUnit, spellID, spellName)
             end
             if (eventType == "SPELL_AURA_REFRESH") then
-                Diminishings:AuraGain(destUnit, spellID)
-                --Diminishings:AuraFade(destUnit, spellID)
+                Diminishings:AuraGain(destUnit, spellID, spellName)
             end
             if (eventType == "SPELL_AURA_APPLIED") then
-                Diminishings:AuraGain(destUnit, spellID)
+                Diminishings:AuraGain(destUnit, spellID, spellName)
             end
         end
         -- death detection
@@ -190,7 +276,31 @@ function EventListener:COMBAT_LOG_EVENT_UNFILTERED(...)
         end
         --interrupt detection
         if Gladdy.buttons[destUnit] and eventType == "SPELL_INTERRUPT" then
-            Gladdy:SendMessage("SPELL_INTERRUPT", destUnit,spellID,spellName,spellSchool,extraSpellId,extraSpellName,extraSpellSchool)
+            -- For SPELL_INTERRUPT: extraArg1=extraSpellId, extraArg2=extraSpellName, extraArg3=extraSpellSchool
+            Gladdy:SendMessage("SPELL_INTERRUPT", destUnit,spellID,spellName,spellSchool,extraArg1,extraArg2,extraArg3)
+        end
+        -- Stealth buff removal detection (Ascension fix)
+        -- Use STEALTH_AURAS (not STEALTH_SPELLS) - Vanish buff fading should NOT clear stealth
+        -- because the unit still has the regular Stealth buff after Vanish fades
+        if Gladdy.buttons[destUnit] and eventType == "SPELL_AURA_REMOVED" then
+            if STEALTH_AURAS[spellName] and Gladdy.buttons[destUnit].stealthed then
+                Gladdy.buttons[destUnit].stealthed = false
+                Gladdy:SendMessage("ENEMY_STEALTH", destUnit, false)
+            end
+        end
+        -- Stealth buff applied detection (Ascension fix - ARENA_OPPONENT_UPDATE may not fire)
+        if Gladdy.buttons[destUnit] and eventType == "SPELL_AURA_APPLIED" then
+            -- Debug: show all aura applied events to find stealth spell names on Ascension
+            if Gladdy.STEALTH_DEBUG then
+                print("|cffaaaaaa[AURA]|r", destUnit, spellID, spellName)
+            end
+            if STEALTH_SPELLS[spellName] and not Gladdy.buttons[destUnit].stealthed then
+                Gladdy.buttons[destUnit].stealthed = true
+                if Gladdy.STEALTH_DEBUG then
+                    print("|cff00ff00[STEALTH]|r", destUnit, "APPLIED:", spellName, "-> stealthed = true")
+                end
+                Gladdy:SendMessage("ENEMY_STEALTH", destUnit, true)
+            end
         end
     end
     if srcUnit then
@@ -198,11 +308,24 @@ function EventListener:COMBAT_LOG_EVENT_UNFILTERED(...)
         if (not UnitExists(srcUnit)) then
             return
         end
+        -- Clear stealth when unit performs any action EXCEPT stealth spells (Ascension fix)
+        -- Don't clear stealth if they're casting Vanish/Shadowmeld (they're going INTO stealth)
+        if Gladdy.buttons[srcUnit].stealthed and not STEALTH_SPELLS[spellName] then
+            Gladdy.buttons[srcUnit].stealthed = false
+            if Gladdy.STEALTH_DEBUG then
+                print("|cffff0000[ACTION]|r", srcUnit, spellName, "-> stealth = false")
+            end
+            Gladdy:SendMessage("ENEMY_STEALTH", srcUnit, false)
+        end
         if not Gladdy.buttons[srcUnit].class or not Gladdy.buttons[srcUnit].race then
             Gladdy:SpotEnemy(srcUnit, true)
         end
         if not Gladdy.buttons[srcUnit].spec then
             self:DetectSpec(srcUnit, Gladdy.specSpells[spellName])
+            -- Also detect via specBuffs when buffs like Grace/Divine Aegis are applied
+            if eventType == "SPELL_AURA_APPLIED" and Gladdy.specBuffs[spellName] then
+                self:DetectSpec(srcUnit, Gladdy.specBuffs[spellName])
+            end
         end
         if (eventType == "SPELL_CAST_SUCCESS" or eventType == "SPELL_AURA_APPLIED" or eventType == "SPELL_MISSED") then
             -- cooldown tracker
@@ -252,13 +375,36 @@ function EventListener:ARENA_OPPONENT_UPDATE(unit, updateReason)
     local button = Gladdy.buttons[unit]
     local pet = Gladdy.modules["Pets"].frames[unit]
     Gladdy:Debug("INFO", "ARENA_OPPONENT_UPDATE", unit, updateReason)
+    if Gladdy.STEALTH_DEBUG then
+        print("|cffff9900[ARENA_UPDATE]|r", unit, updateReason)
+    end
     if button or pet then
         if updateReason == "seen" then
             -- ENEMY_SPOTTED
             if button then
-                button.stealthed = false
-                button.destroyed = nil
-                Gladdy:SendMessage("ENEMY_STEALTH", unit, false)
+                -- Ascension fix: Check if unit is actually visible before clearing stealth
+                -- Sometimes "seen" fires incorrectly when rogue Vanishes
+                local isVisible = UnitIsVisible(unit)
+                if Gladdy.STEALTH_DEBUG then
+                    print("|cffff9900[SEEN]|r", unit, "UnitIsVisible:", isVisible)
+                end
+                if isVisible then
+                    button.stealthed = false
+                    button.destroyed = nil
+                    if Gladdy.STEALTH_DEBUG then
+                        print("|cffff0000[SEEN]|r", unit, "-> stealth = false")
+                    end
+                    Gladdy:SendMessage("ENEMY_STEALTH", unit, false)
+                else
+                    -- Unit not visible, they're probably stealthed - don't clear stealth
+                    if Gladdy.STEALTH_DEBUG then
+                        print("|cff00ff00[SEEN IGNORED]|r", unit, "not visible, keeping stealth")
+                    end
+                    if not button.stealthed then
+                        button.stealthed = true
+                        Gladdy:SendMessage("ENEMY_STEALTH", unit, true)
+                    end
+                end
                 if not button.class or not button.race then
                     Gladdy:SpotEnemy(unit, true)
                 end
@@ -270,19 +416,39 @@ function EventListener:ARENA_OPPONENT_UPDATE(unit, updateReason)
             -- STEALTH
             if button then
                 button.stealthed = true
+                if Gladdy.STEALTH_DEBUG then
+                    print("|cff00ff00[UNSEEN]|r", unit, "-> stealth = true")
+                end
                 Gladdy:SendMessage("ENEMY_STEALTH", unit, true)
             end
             if pet then
                 Gladdy:SendMessage("PET_STEALTH", unit)
             end
         elseif updateReason == "destroyed" then
-            -- LEAVE
+            -- Ascension fix: "destroyed" fires for stealth instead of "unseen"
+            -- Check if unit still exists - if yes, they're stealthed, not actually gone
+            local unitExists = UnitExists(unit)
+            if Gladdy.STEALTH_DEBUG then
+                print("|cffff00ff[DESTROYED]|r", unit, "UnitExists:", unitExists)
+            end
             if button then
-                button.destroyed = true
-                Gladdy:SendMessage("UNIT_DESTROYED", unit)
+                if unitExists then
+                    -- Unit exists but "destroyed" fired = they're stealthed
+                    button.stealthed = true
+                    if Gladdy.STEALTH_DEBUG then
+                        print("|cff00ff00[DESTROYED->STEALTH]|r", unit, "-> stealth = true")
+                    end
+                    Gladdy:SendMessage("ENEMY_STEALTH", unit, true)
+                else
+                    -- Unit really gone
+                    button.destroyed = true
+                    Gladdy:SendMessage("UNIT_DESTROYED", unit)
+                end
             end
             if pet then
-                Gladdy:SendMessage("PET_DESTROYED", unit)
+                if not unitExists then
+                    Gladdy:SendMessage("PET_DESTROYED", unit)
+                end
             end
         elseif updateReason == "cleared" then
             --Gladdy:Print("ARENA_OPPONENT_UPDATE", updateReason, unit)
@@ -350,10 +516,14 @@ function EventListener:UNIT_AURA(unit, isFullUpdate, updatedAuras)
             -- Use spellID as key if available, otherwise use spellName (Ascension compatibility)
             local auraKey = spellID or spellName
             button.auras[auraKey] = { auraType, spellID, spellName, texture, duration, expirationTime, count, dispelType }
-            if not button.spec and Gladdy.specBuffs[spellName] and unitCaster then
-                local unitPet = string_gsub(unit, "%d$", "pet%1")
-                if unitCaster and (UnitIsUnit(unit, unitCaster) or UnitIsUnit(unitPet, unitCaster)) then
-                    self:DetectSpec(unit, Gladdy.specBuffs[spellName])
+            if Gladdy.specBuffs[spellName] and unitCaster then
+                -- Detect spec on the CASTER of the buff, not just self-buffs
+                -- This allows detecting Disc priest when Grace/Divine Aegis appears on allies
+                for arenaUnit, arenaButton in pairs(Gladdy.buttons) do
+                    if not arenaButton.spec and UnitIsUnit(arenaUnit, unitCaster) then
+                        self:DetectSpec(arenaUnit, Gladdy.specBuffs[spellName])
+                        break
+                    end
                 end
             end
             if (Gladdy.cooldownBuffs[spellName] or Gladdy.cooldownBuffs[spellID]) and unitCaster then -- Check for auras that hint used CDs (like Fear Ward)

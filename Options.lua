@@ -57,6 +57,10 @@ Gladdy.defaults = {
         backgroundColor = {r = 0, g = 0, b = 0, a = 0},
         newLayout = false,
         showMover = true,
+        minimap = {
+            hide = false,
+            minimapPos = 220,
+        },
     },
 }
 
@@ -297,6 +301,7 @@ function Gladdy:SetupOptions()
                         values = {
                             ["BOTTOM"] = L["Down"],
                             ["TOP"] = L["Up"],
+                            ["BOTTOM_UP"] = L["Down (anchor bottom)"],
                             ["LEFT"] = L["Left"],
                             ["RIGHT"] = L["Right"],
                         }

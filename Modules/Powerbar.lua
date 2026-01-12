@@ -333,6 +333,10 @@ function Powerbar:UNIT_DEATH(unit)
 end
 
 function Powerbar:UNIT_DESTROYED(unit)
+    -- Don't show LEAVE if unit still exists (just stealthed, not actually gone)
+    if UnitExists(unit) then
+        return
+    end
     local powerBar = self.frames[unit]
     if (not powerBar) then
         return

@@ -357,6 +357,36 @@ else
 end
 
 -- ========================================
+-- CombatLogGetCurrentEventInfo POLYFILL
+-- ========================================
+
+-- CombatLogGetCurrentEventInfo was added in Retail 8.0.1
+-- In WotLK 3.3.5, combat log parameters are passed directly via varargs
+-- This polyfill simply returns the varargs passed to it
+if not _G.CombatLogGetCurrentEventInfo then
+	function _G.CombatLogGetCurrentEventInfo(...)
+		return ...
+	end
+	GladdyCompat_Debug("Created CombatLogGetCurrentEventInfo polyfill")
+else
+	GladdyCompat_Debug("CombatLogGetCurrentEventInfo already exists natively")
+end
+
+-- ========================================
+-- AURA_TYPE CONSTANTS POLYFILL
+-- ========================================
+
+-- These constants should exist on WotLK but ensure they're defined
+if not _G.AURA_TYPE_DEBUFF then
+	_G.AURA_TYPE_DEBUFF = "DEBUFF"
+	GladdyCompat_Debug("Created AURA_TYPE_DEBUFF constant")
+end
+if not _G.AURA_TYPE_BUFF then
+	_G.AURA_TYPE_BUFF = "BUFF"
+	GladdyCompat_Debug("Created AURA_TYPE_BUFF constant")
+end
+
+-- ========================================
 -- INITIALIZATION COMPLETE
 -- ========================================
 

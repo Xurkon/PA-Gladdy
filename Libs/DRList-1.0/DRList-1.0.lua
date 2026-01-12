@@ -134,6 +134,11 @@ Lib.gameExpansion = ({
     [WOW_PROJECT_WRATH_CLASSIC or 11] = "wotlk",
 })[WOW_PROJECT_ID_RCE]
 
+-- Fallback for Ascension/private servers: default to wotlk if gameExpansion is nil
+if not Lib.gameExpansion then
+    Lib.gameExpansion = "wotlk"
+end
+
 -- How long it takes for a DR to expire, in seconds.
 Lib.resetTimes = {
     retail = {
@@ -311,16 +316,17 @@ function Lib:GetResetTime(category)
     return Lib.resetTimes[Lib.gameExpansion][category or "default"] or Lib.resetTimes[Lib.gameExpansion].default
 end
 
---- Get unlocalized DR category by spell ID.
+--- Get unlocalized DR category by spell ID or spell name.
 -- For Classic (vanilla) you should pass in the spell name instead of ID.
 -- For Classic you also get an optional second return value
 -- which is the hardcoded spell ID of the spell name you passed in.
 -- You should use this ID to query additional info from Blizzard API if needed, as
 -- spell names only works for the player if they have the spell in their current spellbook.
--- @tparam number spellID
+-- @tparam number|string spellID The spell ID or spell name
+-- @tparam string spellName Optional spell name for fallback lookup (Ascension compatibility)
 -- @treturn[1] string|nil The category name.
 -- @treturn[2] number|nil The spell ID. (Classic only)
-function Lib:GetCategoryBySpellID(spellID)
+function Lib:GetCategoryBySpellID(spellID, spellName)
     if Lib.gameExpansion == "classic" then
         -- special case for classic as CLEU doesn't provide spellIDs
         local data = Lib.spellList[spellID]
@@ -328,7 +334,24 @@ function Lib:GetCategoryBySpellID(spellID)
         return data.category, data.spellID
     end
 
-    return Lib.spellList[spellID]
+    -- Try by spell ID first
+    local category = Lib.spellList[spellID]
+    if category then
+        return category
+    end
+
+    -- Fallback: try by spell name (for Ascension custom spell IDs)
+    if spellName then
+        -- Build spell name lookup table on first access
+        if Lib.BuildSpellNameLookup then
+            Lib:BuildSpellNameLookup()
+        end
+        if Lib.spellListByName then
+            return Lib.spellListByName[spellName]
+        end
+    end
+
+    return nil
 end
 
 --- Get localized category from unlocalized category name, case sensitive.

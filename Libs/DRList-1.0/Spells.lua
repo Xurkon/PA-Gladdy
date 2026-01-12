@@ -427,6 +427,82 @@ elseif Lib.gameExpansion == "wotlk" then
         [27067] = "counterattack",  -- Counterattack 4
         [48998] = "counterattack",  -- Counterattack 5
         [48999] = "counterattack",  -- Counterattack 6
+
+        -- =============================================
+        -- ASCENSION-SPECIFIC SPELLS
+        -- These are custom spells only found on Ascension private server
+        -- =============================================
+
+        -- Blood Horror
+        [954517] = "horror",
+        [954563] = "horror",
+        [954565] = "horror",
+        [954567] = "horror",
+
+        -- Chaos Meteor
+        [954240] = "incapacitate",
+
+        -- Electrocute
+        [954387] = "incapacitate",
+
+        -- Blinding Light
+        [954500] = "horror",
+
+        -- Guerilla Stun
+        [954099] = "stun",
+
+        -- Timed Charge
+        [954637] = "stun",
+
+        -- Blinding Dispersion
+        [954635] = "incapacitate",
+
+        -- Transformation Sickness
+        [411148] = "stun",
+
+        -- Earthquake Stun
+        [954527] = "random_stun",
+
+        -- Noxious Poison
+        [954189] = "silence",
+
+        -- Lightning Overload
+        [412005] = "random_stun",
+
+        -- Lightning Discharge
+        [954037] = "stun",
+
+        -- Foul Play
+        [965663] = "silence",
+
+        -- Lightning Discharge (Capacitor Totem)
+        [954519] = "stun",
+        [954595] = "stun",
+        [954596] = "stun",
+        [954597] = "stun",
+        [954598] = "stun",
+        [954599] = "stun",
+        [954600] = "stun",
+        [954601] = "stun",
+
+        -- Heroic Impact
+        [949397] = "stun",
+
+        -- Hibernate (Hypnosis)
+        [977966] = "incapacitate",
+
+        -- Stoneclaw Petrification
+        [954121] = "horror",
+
+        -- Light of Justice
+        [977953] = "stun",
+
+        -- Ring of Frost
+        [954855] = "horror",
+
+        -- Shockwave (additional Ascension IDs)
+        [846968] = "stun",
+        [846969] = "stun",
     }
 
 elseif Lib.gameExpansion == "classic" then
@@ -525,3 +601,23 @@ end
 
 -- Alias for DRData-1.0
 Lib.spells = Lib.spellList
+
+-- Build spell name lookup table for Ascension compatibility
+-- This allows DR detection by spell name when spell IDs don't match
+-- Build lazily on first access to ensure GetSpellInfo works properly
+if Lib.gameExpansion == "wotlk" or Lib.gameExpansion == "tbc" then
+    Lib.spellListByName = nil -- Will be built on first access
+
+    function Lib:BuildSpellNameLookup()
+        if Lib.spellListByName then return end -- Already built
+        Lib.spellListByName = {}
+        for spellID, category in pairs(Lib.spellList) do
+            if type(spellID) == "number" then
+                local spellName = GetSpellInfo(spellID)
+                if spellName and not Lib.spellListByName[spellName] then
+                    Lib.spellListByName[spellName] = category
+                end
+            end
+        end
+    end
+end

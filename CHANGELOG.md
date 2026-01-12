@@ -1,16 +1,9 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.8-Ascension
+**Current Version:** v2.6-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
-
----
-
-## v2.8-Ascension (Release)
-- **Version Bump**: Official release v2.8.
-- **Cleanup**: General code cleanup and preparation for production use.
-- **Documentation**: Updated README and docs for v2.8.
 
 ---
 

@@ -133,6 +133,10 @@ function BuffsDebuffs:ResetUnit(unit)
 end
 
 function BuffsDebuffs:UNIT_DESTROYED(unit)
+	-- Don't reset if unit still exists (just stealthed, not actually gone)
+	if UnitExists(unit) then
+		return
+	end
 	BuffsDebuffs:ResetUnit(unit)
 end
 

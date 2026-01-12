@@ -53,6 +53,8 @@ local specBuffs = {
 	[GetSpellInfo(47788)] = L["Holy"], -- Guardian Spirit
 	[GetSpellInfo(52800)] = L["Discipline"], -- Borrowed Time
 	[GetSpellInfo(63944)] = L["Discipline"], -- Renewed Hope
+	[GetSpellInfo(47930)] = L["Discipline"], -- Grace (stacks when healing)
+	[GetSpellInfo(47753)] = L["Discipline"], -- Divine Aegis (absorb shield on crit)
 	[GetSpellInfo(15473)] = L["Shadow"], -- Shadowform
 	[GetSpellInfo(15286)] = L["Shadow"], -- Vampiric Embrace
 	-- DEATHKNIGHT
