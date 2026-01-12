@@ -503,6 +503,64 @@ elseif Lib.gameExpansion == "wotlk" then
         -- Shockwave (additional Ascension IDs)
         [846968] = "stun",
         [846969] = "stun",
+
+        -- Additional Ascension spells from Spells.csv (9M-11M ID range)
+        -- Stuns
+        [10005589] = "stun", -- Hammer of Justice
+        [10005708] = "stun", -- Swoop
+        [10006253] = "stun", -- Backhand
+        [10006466] = "stun", -- Axe Toss
+        [10006524] = "stun", -- Ground Tremor
+        [10006728] = "stun", -- Enveloping Winds
+        [10007139] = "stun", -- Fel Stomp
+        [10008391] = "stun", -- Ravage
+        [10011020] = "stun", -- Petrify
+        [10011428] = "stun", -- Stunning Strike
+        [10011876] = "stun", -- War Stomp
+        [10012461] = "stun", -- Backhand
+        [10016790] = "stun", -- Stunning Strike
+        [10021749] = "stun", -- Thorn Volley
+        [10022592] = "stun", -- Knockdown
+        [9931152] = "stun", -- Sand Blast
+        [9931343] = "stun", -- Magnetic Interrupt
+
+        -- Roots
+        [10000113] = "root", -- Chains of Ice
+        [10000745] = "root", -- Web
+        [10006533] = "root", -- Net
+        [10007922] = "root", -- Charge Root
+        [10011264] = "root", -- Ice Blast
+        [10011820] = "root", -- Electrified Net
+        [10011831] = "root", -- Frost Nova
+        [10011922] = "root", -- Entangling Roots
+        [10012024] = "root", -- Net
+        [10014907] = "root", -- Frost Nova
+        [10015532] = "root", -- Frost Nova
+        [10021331] = "root", -- Entangling Roots
+        [9931157] = "root", -- Hungry Roots
+
+        -- Fears
+        [10007399] = "fear", -- Terrify
+        [10012096] = "fear", -- Fear
+        [10013704] = "fear", -- Psychic Scream
+        [9931180] = "fear", -- Terrifying Music
+
+        -- Silences
+        [10006726] = "silence", -- Silence
+        [10007074] = "silence", -- Screams of the Past
+        [10012528] = "silence", -- Silence
+        [9931179] = "silence", -- Shadowstrike
+
+        -- Incapacitates (Hex, Gouge, Sleep, etc.)
+        [10003636] = "incapacitate", -- Crystalline Slumber
+        [10008040] = "incapacitate", -- Druid's Slumber
+        [10011641] = "incapacitate", -- Hex
+        [10012098] = "incapacitate", -- Sleep
+        [10012540] = "incapacitate", -- Gouge
+        [10034039] = "incapacitate", -- Tunnel Bore
+        [10084047] = "incapacitate", -- Sleep
+        [9666682] = "incapacitate", -- Entomb
+        [9666748] = "incapacitate", -- Hex
     }
 
 elseif Lib.gameExpansion == "classic" then
