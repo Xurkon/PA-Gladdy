@@ -285,16 +285,9 @@ function TotemPlates.OnEvent(self, event, ...)
 end
 
 function TotemPlates:Initialize()
-	if ( IsAddOnLoaded("Kui_Nameplates") ) then
-		self.addon = "Kui_Nameplates"
-	elseif ( IsAddOnLoaded("TidyPlates") ) then
-		self.addon = "TidyPlates"
-	elseif ( IsAddOnLoaded("ElvUI") ) then
-		local E = unpack(ElvUI)
-		if ( E.private.nameplates.enable ) then
-			return
-		end
-	end
+	-- Universal approach: works with any nameplate addon
+	-- No longer check for specific addons (Kui_Nameplates, TidyPlates, ElvUI)
+	-- Instead, we overlay our totem icons on top of any nameplate system
 
 	TotemPlates.void = function()end
 	self:SetScript("OnEvent", TotemPlates.OnEvent)
@@ -302,16 +295,34 @@ function TotemPlates:Initialize()
 end
 
 local function NameplateScanValid(self)
-	if ( self ) then
-		if ( TotemPlates.addon ) then
-			return TotemPlates:GetAddonFrame(self)
-		elseif ( not self:GetName() ) then
-			local _, obj = self:GetRegions()
-			if ( obj and obj:GetObjectType() == "Texture" ) then
-				return obj:GetTexture() == "Interface\\Tooltips\\Nameplate-Border"
+	if not self then return false end
+	
+	-- Skip named frames (usually UI elements, not nameplates)
+	if self:GetName() then return false end
+	
+	-- Method 1: Check for Blizzard nameplate border texture
+	local numRegions = self:GetNumRegions()
+	for i = 1, numRegions do
+		local region = select(i, self:GetRegions())
+		if region and region:GetObjectType() == "Texture" then
+			local texture = region:GetTexture()
+			if texture == "Interface\\Tooltips\\Nameplate-Border" then
+				return true
 			end
 		end
 	end
+	
+	-- Method 2: Check for health bar child (common nameplate element)
+	local numChildren = self:GetNumChildren()
+	for i = 1, numChildren do
+		local child = select(i, self:GetChildren())
+		if child and child:GetObjectType() == "StatusBar" then
+			-- Found a status bar, likely a health bar - this is probably a nameplate
+			return true
+		end
+	end
+	
+	return false
 end
 
 local function NameplateScan(nameplate, ...)
@@ -550,10 +561,48 @@ function TotemPlates:CreateTotemFrame(nameplate, test)
 		Highlight:SetAlpha(0)
 		Frame.selectionHighlight = Highlight
 
-		-- References
-		local threatglow, castbar, castbarborder, castbarinterrupt, castbaricon -- Unused
-		Frame.healthbar, castbar = nameplate:GetChildren()
-		threatglow, Frame.healthborder, castborder, castinterrupt, casticon, Frame.highlighttexture, Frame.nametext, Frame.leveltext, Frame.bossicon, Frame.raidicon, Frame.mobicon = nameplate:GetRegions()
+		-- Universal element discovery - find nameplate elements regardless of addon
+		-- Try to find healthbar from children
+		local numChildren = nameplate:GetNumChildren()
+		for i = 1, numChildren do
+			local child = select(i, nameplate:GetChildren())
+			if child and child:GetObjectType() == "StatusBar" and not Frame.healthbar then
+				Frame.healthbar = child
+			end
+		end
+		
+		-- Try to find text and icons from regions
+		local numRegions = nameplate:GetNumRegions()
+		for i = 1, numRegions do
+			local region = select(i, nameplate:GetRegions())
+			if region then
+				local objType = region:GetObjectType()
+				if objType == "Texture" then
+					local texture = region:GetTexture()
+					if texture then
+						if texture:find("Nameplate%-Border") then
+							Frame.healthborder = region
+						elseif texture:find("Highlight") then
+							Frame.highlighttexture = region
+						elseif texture:find("Skull") or texture:find("Boss") then
+							Frame.bossicon = region
+						elseif texture:find("Raid") then
+							Frame.raidicon = region
+						end
+					end
+				elseif objType == "FontString" then
+					local text = region:GetText()
+					if text then
+						-- First fontstring is usually the name, second might be level
+						if not Frame.nametext then
+							Frame.nametext = region
+						elseif not Frame.leveltext then
+							Frame.leveltext = region
+						end
+					end
+				end
+			end
+		end
 
 		-- Hooks
 		nameplate:HookScript("OnHide", TotemPlates.NAME_PLATE_UNIT_REMOVED)
@@ -595,61 +644,37 @@ function TotemPlates:ToggleTotem(totem, show)
 end
 
 function TotemPlates:GetAddonFrame(nameplate)
-	if ( self.addon == "Kui_Nameplates" ) then
-		return nameplate.kui
-	elseif ( self.addon == "TidyPlates" ) then
-		return nameplate.extended
-	else
-		return nameplate.gladdyTotemFrame
-	end
+	-- Universal approach: always return the gladdy totem frame
+	-- We overlay our frame on top of any nameplate addon
+	return nameplate.gladdyTotemFrame
 end
 
 function TotemPlates:ToggleAddon(nameplate, show)
-	local addon = TotemPlates:GetAddonFrame(nameplate)
-
-	if ( self.addon ) then
-		if ( addon ) then
-			local isKui = self.addon == "Kui_Nameplates"
-
-			if ( show ) then
-				addon.Show = nil
-
-				if ( isKui ) then
-					addon.currentAlpha = 1
-					addon.lastAlpha = 0
-					addon.DoShow = 1
-				else
-					addon:Show()
-				end
-			else
-				if ( isKui ) then
-					addon.currentAlpha = 1
-					addon.lastAlpha = 1
-					addon.DoShow = nil
-				end
-
-				addon:Hide()
-				addon.Show = TotemPlates.void
-			end
-		end
+	-- Universal overlay approach: we don't manipulate other addon's frames
+	-- We simply hide default nameplate elements for cleaner display
+	local totem = nameplate.gladdyTotemFrame
+	if not totem then return end
+	
+	-- Try to hide/show standard nameplate elements if they exist
+	-- These are stored during CreateTotemFrame
+	if show then
+		-- Show underlying nameplate elements (restore normal view)
+		if totem.healthbar then pcall(function() totem.healthbar:Show() end) end
+		if totem.healthborder then pcall(function() totem.healthborder:Show() end) end
+		if totem.highlighttexture then pcall(function() totem.highlighttexture:SetAlpha(1) end) end
+		if totem.raidicon then pcall(function() totem.raidicon:SetAlpha(1) end) end
+		if totem.nametext then pcall(function() totem.nametext:Show() end) end
+		if totem.leveltext then pcall(function() totem.leveltext:Show() end) end
 	else
-		if ( show ) then
-			addon.healthbar:Show()
-			addon.healthborder:Show()
-			addon.highlighttexture:SetAlpha(1)
-			addon.raidicon:SetAlpha(1)
-			addon.nametext:Show()
-			addon.leveltext:Show()
-		else
-			addon.healthbar:Hide()
-			addon.healthborder:Hide()
-			addon.highlighttexture:SetAlpha(0)
-			addon.mobicon:Hide()
-			addon.bossicon:Hide()
-			addon.raidicon:SetAlpha(0)
-			addon.nametext:Hide()
-			addon.leveltext:Hide()
-		end
+		-- Hide underlying nameplate elements for clean totem display
+		if totem.healthbar then pcall(function() totem.healthbar:Hide() end) end
+		if totem.healthborder then pcall(function() totem.healthborder:Hide() end) end
+		if totem.highlighttexture then pcall(function() totem.highlighttexture:SetAlpha(0) end) end
+		if totem.mobicon then pcall(function() totem.mobicon:Hide() end) end
+		if totem.bossicon then pcall(function() totem.bossicon:Hide() end) end
+		if totem.raidicon then pcall(function() totem.raidicon:SetAlpha(0) end) end
+		if totem.nametext then pcall(function() totem.nametext:Hide() end) end
+		if totem.leveltext then pcall(function() totem.leveltext:Hide() end) end
 	end
 end
 

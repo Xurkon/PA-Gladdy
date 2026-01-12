@@ -18,6 +18,13 @@ This changelog documents the complete history of changes, hotfixes, and optimiza
   - 9 incapacitate spells (Hex, Gouge, Sleep, etc.)
 - Spell IDs sourced from Ascension Spells.csv (9M-11M ID range)
 
+### TotemPlates Universal Compatibility
+- Rewrote TotemPlates module to work with **any nameplate addon**
+- Removed hardcoded addon-specific checks (Kui_Nameplates, TidyPlates, ElvUI)
+- Uses overlay approach - totem icons display on top of any nameplate system
+- Generic nameplate detection via health bar and border texture scanning
+- Safe element manipulation with pcall protection to prevent errors
+
 ### Notes
 - **Spec Icons**: The "Show Spec Icon" option is disabled by default. Enable it in Gladdy settings (Class Icon section) to switch class icons to spec icons once detected.
 - **DR Debug**: Use `/run Gladdy.DR_DEBUG = true` to see DR detection in chat
