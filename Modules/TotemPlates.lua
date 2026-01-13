@@ -776,9 +776,10 @@ function TotemPlates:TestOnce()
 
 			local totem = test.gladdyTotemFrame
 			totem:SetParent(test)
+			totem:ClearAllPoints()
+			totem:SetPoint("CENTER", test, "CENTER", 0, 0)
 			totem.totemIcon:SetTexture(totemData["tremor totem"].texture)
 			totem.totemName:SetText("Gladdy: Totem Plates")
-			totem:Show()
 		end
 
 		local totem = test.gladdyTotemFrame
@@ -789,6 +790,8 @@ function TotemPlates:TestOnce()
 		totem.totemName:SetPoint("TOP", totem, "BOTTOM", Gladdy.db.npTremorFontXOffset, Gladdy.db.npTremorFontYOffset)
 		totem.totemBorder:SetTexture(Gladdy.db.npTotemPlatesBorderStyle)
 		totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
+		totem:SetAlpha(1) -- Ensure full visibility for test mode
+		totem:Show()
 
 		test:Show()
 	elseif ( test ) then
