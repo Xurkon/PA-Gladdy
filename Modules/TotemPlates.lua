@@ -15,6 +15,26 @@ local NAMEPLATE_TARGET
 local activeNameplates = {}
 local timestamp = {}
 
+-- Helper function to find unit for a nameplate
+local function GetNameplateUnit(nameplate)
+	-- Try C_NamePlate API first
+	if C_NamePlate and C_NamePlate.GetNamePlates then
+		for _, np in pairs(C_NamePlate.GetNamePlates()) do
+			if np == nameplate then
+				-- Found match, now find the unit
+				for i = 1, 40 do
+					local unit = "nameplate" .. i
+					local unitPlate = C_NamePlate.GetNamePlateForUnit(unit)
+					if unitPlate == nameplate then
+						return unit
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+
 ---------------------------------------------------
 
 -- Pulse Timer Functions (from core.lua)
@@ -400,6 +420,14 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 						TotemPlates:ToggleAddon(nameplate)
 						totem.active = totemData
 
+						-- Set click-to-target unit (only outside combat to prevent taint)
+						if not InCombatLockdown() then
+							local unit = GetNameplateUnit(nameplate)
+							if unit then
+								totem:SetAttribute("unit", unit)
+							end
+						end
+
 						TotemPlates:SetTotemAlpha(totem, nameplateText)
 
 						-- Check if this is a tremor or cleansing totem and add pulse timer
@@ -434,6 +462,11 @@ function TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplate)
 		if ( totem.active ) then
 			TotemPlates:ToggleTotem(totem)
 			totem.active = nil
+			
+			-- Clear click-to-target unit (only outside combat to prevent taint)
+			if not InCombatLockdown() then
+				totem:SetAttribute("unit", nil)
+			end
 		end
 
 		-- Hide pulse timer if it exists
@@ -526,10 +559,20 @@ end
 ---------------------------------------------------
 
 function TotemPlates:CreateTotemFrame(nameplate, test)
-	local Frame = CreateFrame("Frame", nil, WorldFrame) -- Parent prevents parental alpha.
+	-- Use Button with SecureActionButtonTemplate for click-to-target functionality
+	local Frame = CreateFrame("Button", nil, WorldFrame, "SecureActionButtonTemplate")
 	Frame:SetPoint("BOTTOM", nameplate, "TOP", 0, -25)
 	Frame:SetSize(Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor, Gladdy.db.npTotemPlatesSize)
 	Frame:Hide()
+	
+	-- Enable mouse interaction for clicking
+	Frame:EnableMouse(true)
+	Frame:RegisterForClicks("AnyUp")
+	
+	-- Set up secure targeting action (static, won't cause taint)
+	Frame:SetAttribute("type1", "target")
+	-- Unit will be set dynamically when totem is detected (outside combat only)
+	
 	nameplate.gladdyTotemFrame = Frame
 
 	-- Icon
