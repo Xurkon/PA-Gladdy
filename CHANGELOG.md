@@ -1,9 +1,18 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.8-Ascension
+**Current Version:** v2.8.1-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.8.1-Ascension (2026-01-13)
+
+### TotemPlates Stability Fix
+- Fixed Lua error `attempt to index field 'nametext' (a nil value)` that could occur with certain nameplate addons
+- Added nil checks in `NAME_PLATE_UNIT_ADDED`, `PLAYER_TARGET_CHANGED_UPDATE`, and `OnUpdate` functions
+- Prevents crashes when nameplate text elements aren't fully initialized (common when switching addon versions)
 
 ---
 

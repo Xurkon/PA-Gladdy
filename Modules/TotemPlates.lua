@@ -380,7 +380,7 @@ local function PLAYER_TARGET_CHANGED_UPDATE(nameplate, ...)
 	if ( nameplate ) then
 		local totem = nameplate.gladdyTotemFrame
 
-		if ( totem and totem.active ) then
+		if ( totem and totem.active and totem.nametext ) then
 			TotemPlates:SetTotemAlpha(totem, totem.nametext:GetText())
 		end
 
@@ -403,7 +403,7 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 		end
 
 		local totem = nameplate.gladdyTotemFrame
-		if ( totem ) then
+		if ( totem and totem.nametext ) then
 			local nameplateText = totem.nametext:GetText()
 			local totemData = totemNameTotemData[nameplateText]
 
@@ -727,6 +727,7 @@ function TotemPlates:ToggleAddon(nameplate, show)
 end
 
 function TotemPlates.OnUpdate(self, elapsed)
+	if not self.nametext then return end
 	local nameplateName = self.nametext:GetText()
 
 	if ( self.active and (nameplateName == NAMEPLATE_TARGET or UnitName("mouseover") == nameplateName or not NAMEPLATE_TARGET) ) then
