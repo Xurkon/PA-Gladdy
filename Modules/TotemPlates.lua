@@ -420,12 +420,17 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 						TotemPlates:ToggleAddon(nameplate)
 						totem.active = totemData
 
-						-- Set click-to-target unit (only outside combat to prevent taint)
+						-- Hybrid click-to-target: secure button if possible, pass-through otherwise
 						if not InCombatLockdown() then
+							-- Outside combat: enable secure targeting on our button
 							local unit = GetNameplateUnit(nameplate)
 							if unit then
 								totem:SetAttribute("unit", unit)
+								totem:EnableMouse(true) -- Our button handles clicks
 							end
+						else
+							-- In combat: can't set attributes, so pass clicks to underlying nameplate
+							totem:EnableMouse(false) -- Let clicks pass through to nameplate
 						end
 
 						TotemPlates:SetTotemAlpha(totem, nameplateText)
