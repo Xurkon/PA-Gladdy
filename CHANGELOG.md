@@ -1,33 +1,33 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.7-Ascension
+**Current Version:** v2.8-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
 
 ---
 
-## v2.7-Ascension (2026-01-12)
+## v2.8-Ascension (2026-01-12)
 
-### Diminishing Returns Expansion
-- Added **47 new Ascension-specific CC spells** to DRList for proper DR tracking
-  - 17 stun spells (Hammer of Justice, War Stomp, Ravage, etc.)
-  - 13 root spells (Frost Nova, Entangling Roots, Chains of Ice, etc.)
-  - 4 fear spells (Psychic Scream, Fear, Terrify, etc.)
-  - 4 silence spells (Silence, Shadowstrike, etc.)
-  - 9 incapacitate spells (Hex, Gouge, Sleep, etc.)
-- Spell IDs sourced from Ascension Spells.csv (9M-11M ID range)
+### TotemPlates Click-to-Target
+- Added **click-to-target** functionality for totem icons
+- Uses hybrid approach: SecureActionButton outside combat, pass-through clicks during combat
+- Totems are now clickable to target in ALL situations (pre-combat and mid-combat spawns)
+- No taint issues - proper InCombatLockdown() checks on all attribute changes
 
 ### TotemPlates Universal Compatibility
 - Rewrote TotemPlates module to work with **any nameplate addon**
 - Removed hardcoded addon-specific checks (Kui_Nameplates, TidyPlates, ElvUI)
 - Uses overlay approach - totem icons display on top of any nameplate system
 - Generic nameplate detection via health bar and border texture scanning
-- Safe element manipulation with pcall protection to prevent errors
+
+### Diminishing Returns Expansion
+- Added **47 new Ascension-specific CC spells** to DRList for proper DR tracking
+  - 17 stun spells, 13 root spells, 4 fear spells, 4 silence spells, 9 incapacitate spells
 
 ### Notes
-- **Spec Icons**: The "Show Spec Icon" option is disabled by default. Enable it in Gladdy settings (Class Icon section) to switch class icons to spec icons once detected.
-- **DR Debug**: Use `/run Gladdy.DR_DEBUG = true` to see DR detection in chat
+- **Spec Icons**: Enable "Show Spec Icon" in Class Icon settings
+- **DR Debug**: Use `/run Gladdy.DR_DEBUG = true` to see DR detection
 
 ---
 
