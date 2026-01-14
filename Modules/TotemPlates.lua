@@ -344,10 +344,14 @@ function TotemPlates:Initialize()
 					if not GladdyXZ.global then GladdyXZ.global = {} end
 					GladdyXZ.global.totemPlatesChoice = "gladdy"
 					
+					Gladdy:Print("DEBUG: TurboPlatesDB exists = " .. tostring(TurboPlatesDB ~= nil))
 					if TurboPlatesDB then
+						Gladdy:Print("DEBUG: TurboPlatesDB.totemDisplay BEFORE = " .. tostring(TurboPlatesDB.totemDisplay))
 						TurboPlatesDB.totemDisplay = "disabled"
+						Gladdy:Print("DEBUG: TurboPlatesDB.totemDisplay AFTER = " .. tostring(TurboPlatesDB.totemDisplay))
 					end
 					Gladdy:Print("TotemPlates: Using Gladdy (Turboplates totem icons disabled)")
+					Gladdy:Print("DEBUG: ReloadUI will be called now...")
 					ReloadUI()
 				end,
 				OnCancel = function()
