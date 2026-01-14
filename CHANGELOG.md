@@ -13,7 +13,6 @@ This changelog documents the complete history of changes, hotfixes, and optimiza
 - **Fixed**: Modified Turboplates to read Gladdy's preference from `GladdyXZ.global.totemPlatesChoice`
 - When "Gladdy" is selected, Turboplates now completely hides its plate for totems
 - Removed debug statements from production build
-- **Note**: You must use the modified version of Turboplates (included in v2.9.6 release) for this integration to work.
 
 ---
 
