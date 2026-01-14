@@ -309,7 +309,7 @@ function TotemPlates:Initialize()
 	
 	if hasTurboplates then
 		local preferenceKey = "totemPlatesChoice"
-		local saved = Gladdy.db[preferenceKey]
+		local saved = GladdyXZ and GladdyXZ.totemPlatesChoice
 		
 		if saved == "gladdy" then
 			if TurboPlatesDB then
@@ -317,7 +317,6 @@ function TotemPlates:Initialize()
 			end
 		elseif saved == "turboplates" then
 			Gladdy.db.npTotems = false
-			Gladdy:Print("TotemPlates disabled - using Turboplates totem icons")
 			return
 		elseif saved == nil then
 			StaticPopupDialogs["GLADDY_TOTEMPLATES_CHOICE"] = {
@@ -325,7 +324,8 @@ function TotemPlates:Initialize()
 				button1 = "Gladdy",
 				button2 = "Turboplates",
 				OnAccept = function()
-					Gladdy.db[preferenceKey] = "gladdy"
+					if not GladdyXZ then GladdyXZ = {} end
+					GladdyXZ.totemPlatesChoice = "gladdy"
 					if TurboPlatesDB then
 						TurboPlatesDB.totemDisplay = "disabled"
 					end
@@ -333,7 +333,8 @@ function TotemPlates:Initialize()
 					ReloadUI()
 				end,
 				OnCancel = function()
-					Gladdy.db[preferenceKey] = "turboplates"
+					if not GladdyXZ then GladdyXZ = {} end
+					GladdyXZ.totemPlatesChoice = "turboplates"
 					Gladdy.db.npTotems = false
 					Gladdy:Print("TotemPlates: Using Turboplates (Gladdy totem icons disabled)")
 					ReloadUI()

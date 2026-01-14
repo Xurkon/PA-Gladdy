@@ -1,9 +1,17 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.2-Ascension
+**Current Version:** v2.9.3-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.9.3-Ascension (2026-01-14)
+
+### Preference Persistence Fix
+- **Fixed**: Totem plates choice now properly saved and remembered across reloads
+- Saves directly to `GladdyXZ` SavedVariables instead of AceDB proxy
 
 ---
 
