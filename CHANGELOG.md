@@ -1,9 +1,19 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.6-Ascension
+**Current Version:** v2.9.7-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.9.7-Ascension (2026-01-14)
+
+### Turboplates Integration Bugfix
+- **Fixed**: Turboplates now checks if Gladdy addon is actually LOADED, not just SavedVariables
+- **Fixed**: Removed problematic else clause that was hiding all totem plates
+- When Turboplates only is enabled, totem icons now display correctly
+- When Gladdy only is enabled, totem plates now display correctly
 
 ---
 
