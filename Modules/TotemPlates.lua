@@ -308,7 +308,14 @@ function TotemPlates:Initialize()
 	local hasTurboplates = IsAddOnLoaded("Turboplates") or IsAddOnLoaded("TurboPlates")
 	
 	if hasTurboplates then
-		local saved = Gladdy.dbi and Gladdy.dbi.global and Gladdy.dbi.global.totemPlatesChoice
+		local saved = nil
+		
+		if Gladdy.dbi and Gladdy.dbi.global then
+			saved = Gladdy.dbi.global.totemPlatesChoice
+		end
+		if not saved and GladdyXZ and GladdyXZ.global then
+			saved = GladdyXZ.global.totemPlatesChoice
+		end
 		
 		if saved == "gladdy" then
 			if TurboPlatesDB then
@@ -317,13 +324,19 @@ function TotemPlates:Initialize()
 		elseif saved == "turboplates" then
 			Gladdy.db.npTotems = false
 			return
-		elseif saved == nil then
+		elseif not saved then
 			StaticPopupDialogs["GLADDY_TOTEMPLATES_CHOICE"] = {
 				text = "Both Gladdy and Turboplates can display totem icons.\n\nWhich addon should handle totem nameplates?\n\n(Gladdy has click-to-target and pulse timers)",
 				button1 = "Gladdy",
 				button2 = "Turboplates",
 				OnAccept = function()
-					Gladdy.dbi.global.totemPlatesChoice = "gladdy"
+					if Gladdy.dbi and Gladdy.dbi.global then
+						Gladdy.dbi.global.totemPlatesChoice = "gladdy"
+					end
+					if not GladdyXZ then GladdyXZ = {} end
+					if not GladdyXZ.global then GladdyXZ.global = {} end
+					GladdyXZ.global.totemPlatesChoice = "gladdy"
+					
 					if TurboPlatesDB then
 						TurboPlatesDB.totemDisplay = "disabled"
 					end
@@ -331,7 +344,13 @@ function TotemPlates:Initialize()
 					ReloadUI()
 				end,
 				OnCancel = function()
-					Gladdy.dbi.global.totemPlatesChoice = "turboplates"
+					if Gladdy.dbi and Gladdy.dbi.global then
+						Gladdy.dbi.global.totemPlatesChoice = "turboplates"
+					end
+					if not GladdyXZ then GladdyXZ = {} end
+					if not GladdyXZ.global then GladdyXZ.global = {} end
+					GladdyXZ.global.totemPlatesChoice = "turboplates"
+					
 					Gladdy.db.npTotems = false
 					Gladdy:Print("TotemPlates: Using Turboplates (Gladdy totem icons disabled)")
 					ReloadUI()

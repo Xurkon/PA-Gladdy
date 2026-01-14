@@ -1,9 +1,18 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.4-Ascension
+**Current Version:** v2.9.5-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.9.5-Ascension (2026-01-14)
+
+### Turboplates Integration Robustness
+- **Fixed**: Preference now saved to BOTH `Gladdy.dbi.global` AND raw `GladdyXZ.global` for redundancy
+- Reads from both sources on load for maximum compatibility
+- Added defensive checks to prevent errors if AceDB not fully initialized
 
 ---
 
