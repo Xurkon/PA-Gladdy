@@ -511,23 +511,19 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 		if ( totem and totem.nametext ) then
 			local nameplateText = totem.nametext:GetText()
 			local totemDataMatch = FindTotemData(nameplateText)
-			
-			if not totemDataMatch and nameplateText then
-				Gladdy:Print("DEBUG: No totem match for: " .. nameplateText)
-			end
 
 			if ( totemDataMatch ) then
 				if ( TotemPlates:NameplateTypeValid(totem) ) then
-					local totemInfo = Gladdy.db.npTotemColors["totem" .. totemData.id]
+					local totemInfo = Gladdy.db.npTotemColors["totem" .. totemDataMatch.id]
 
 					if ( totemInfo.enabled ) then
-						totem.totemIcon:SetTexture(totemData.texture)
+						totem.totemIcon:SetTexture(totemDataMatch.texture)
 						totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
 						totem.totemName:SetText(totemInfo.customText or "")
 
 						TotemPlates:ToggleTotem(totem, true)
 						TotemPlates:ToggleAddon(nameplate)
-						totem.active = totemData
+						totem.active = totemDataMatch
 
 						-- Hybrid click-to-target: secure button if possible, pass-through otherwise
 						if not InCombatLockdown() then

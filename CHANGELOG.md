@@ -1,9 +1,18 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.7-Ascension
+**Current Version:** v2.9.8-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.9.8-Ascension (2026-01-14)
+
+### Critical Totem Matching Bugfix
+- **Fixed**: Variable naming bug where `totemDataMatch` was stored but `totemData` (wrong variable) was used
+- This was causing totem matching to fail completely
+- Removed debug print statements
 
 ---
 
