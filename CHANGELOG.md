@@ -1,18 +1,26 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.1-Ascension
+**Current Version:** v2.9.2-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
 
 ---
 
+## v2.9.2-Ascension (2026-01-14)
+
+### Turboplates Seamless Integration
+- **User Choice Dialog**: When both Gladdy and Turboplates are installed, a popup asks which addon should handle totem icons
+- **Smart Disable**: Automatically disables the other addon's totem feature based on user choice
+- **Preference Saved**: Choice is remembered to prevent repeat prompts
+- **Gladdy Advantage**: Dialog highlights Gladdy's exclusive features (click-to-target, pulse timers)
+
+---
+
 ## v2.9.1-Ascension (2026-01-14)
 
-### Turboplates Conflict Fix
-- **Auto-Disable**: TotemPlates now automatically disables when Turboplates is detected
-- Prevents duplicate totem icons and nameplate conflicts
-- Prints message: "TotemPlates disabled - Turboplates detected (uses its own totem icons)"
+### Turboplates Conflict Fix (superseded by v2.9.2)
+- Auto-disable logic replaced with user choice dialog in v2.9.2
 
 ---
 

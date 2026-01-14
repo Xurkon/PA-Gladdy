@@ -305,16 +305,50 @@ function TotemPlates.OnEvent(self, event, ...)
 end
 
 function TotemPlates:Initialize()
-	-- Check for conflicting nameplate addons that have their own totem handling
-	if IsAddOnLoaded("Turboplates") or IsAddOnLoaded("TurboPlates") then
-		Gladdy:Print("TotemPlates disabled - Turboplates detected (uses its own totem icons)")
-		Gladdy.db.npTotems = false
-		return
+	local hasTurboplates = IsAddOnLoaded("Turboplates") or IsAddOnLoaded("TurboPlates")
+	
+	if hasTurboplates then
+		local preferenceKey = "totemPlatesChoice"
+		local saved = Gladdy.db[preferenceKey]
+		
+		if saved == "gladdy" then
+			if TurboPlatesDB then
+				TurboPlatesDB.totemDisplay = "disabled"
+			end
+		elseif saved == "turboplates" then
+			Gladdy.db.npTotems = false
+			Gladdy:Print("TotemPlates disabled - using Turboplates totem icons")
+			return
+		elseif saved == nil then
+			StaticPopupDialogs["GLADDY_TOTEMPLATES_CHOICE"] = {
+				text = "Both Gladdy and Turboplates can display totem icons.\n\nWhich addon should handle totem nameplates?\n\n(Gladdy has click-to-target and pulse timers)",
+				button1 = "Gladdy",
+				button2 = "Turboplates",
+				OnAccept = function()
+					Gladdy.db[preferenceKey] = "gladdy"
+					if TurboPlatesDB then
+						TurboPlatesDB.totemDisplay = "disabled"
+					end
+					Gladdy:Print("TotemPlates: Using Gladdy (Turboplates totem icons disabled)")
+					ReloadUI()
+				end,
+				OnCancel = function()
+					Gladdy.db[preferenceKey] = "turboplates"
+					Gladdy.db.npTotems = false
+					Gladdy:Print("TotemPlates: Using Turboplates (Gladdy totem icons disabled)")
+					ReloadUI()
+				end,
+				timeout = 0,
+				whileDead = true,
+				hideOnEscape = false,
+				preferredIndex = 3,
+			}
+			C_Timer.After(2, function()
+				StaticPopup_Show("GLADDY_TOTEMPLATES_CHOICE")
+			end)
+			return
+		end
 	end
-
-	-- Universal approach: works with any nameplate addon
-	-- No longer check for specific addons (Kui_Nameplates, TidyPlates, ElvUI)
-	-- Instead, we overlay our totem icons on top of any nameplate system
 
 	TotemPlates.void = function()end
 	self:SetScript("OnEvent", TotemPlates.OnEvent)
