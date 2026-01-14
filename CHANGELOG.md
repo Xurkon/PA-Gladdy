@@ -1,9 +1,18 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9-Ascension
+**Current Version:** v2.9.1-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.9.1-Ascension (2026-01-14)
+
+### Turboplates Conflict Fix
+- **Auto-Disable**: TotemPlates now automatically disables when Turboplates is detected
+- Prevents duplicate totem icons and nameplate conflicts
+- Prints message: "TotemPlates disabled - Turboplates detected (uses its own totem icons)"
 
 ---
 

@@ -305,6 +305,13 @@ function TotemPlates.OnEvent(self, event, ...)
 end
 
 function TotemPlates:Initialize()
+	-- Check for conflicting nameplate addons that have their own totem handling
+	if IsAddOnLoaded("Turboplates") or IsAddOnLoaded("TurboPlates") then
+		Gladdy:Print("TotemPlates disabled - Turboplates detected (uses its own totem icons)")
+		Gladdy.db.npTotems = false
+		return
+	end
+
 	-- Universal approach: works with any nameplate addon
 	-- No longer check for specific addons (Kui_Nameplates, TidyPlates, ElvUI)
 	-- Instead, we overlay our totem icons on top of any nameplate system

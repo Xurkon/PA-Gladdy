@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: Gladdy
-## Version: 2.9-Ascension
+## Version: 2.9.1-Ascension
 ## Notes: The most powerful arena AddOn for WoW 3.3.5 (Ascension Compatible)
 ## Author: XiconQoo, DnB_Junkee, Knall, Tsoukie
 ## SavedVariables: GladdyXZ
