@@ -1,9 +1,18 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.5-Ascension
+**Current Version:** v2.9.6-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.9.6-Ascension (2026-01-14)
+
+### Full Turboplates Integration
+- **Fixed**: Modified Turboplates to read Gladdy's preference from `GladdyXZ.global.totemPlatesChoice`
+- When "Gladdy" is selected, Turboplates now completely hides its plate for totems
+- Removed debug statements from production build
 
 ---
 

@@ -15,6 +15,53 @@ local NAMEPLATE_TARGET
 local activeNameplates = {}
 local timestamp = {}
 
+local function FindTotemData(nameplateText)
+	if not nameplateText then return nil end
+	
+	local exactMatch = totemNameTotemData[nameplateText]
+	if exactMatch then return exactMatch end
+	
+	local lowerText = nameplateText:lower()
+	if not lowerText:find("totem") then return nil end
+	
+	local totemAbbreviations = {
+		["tremor"] = {"t. totem", "tremor", "tr. totem", "trem"},
+		["grounding"] = {"g. totem", "grounding", "gr. totem", "gro", "ground"},
+		["earthbind"] = {"e. totem", "earthbind", "eb. totem", "earth", "eb"},
+		["windfury"] = {"w. totem", "windfury", "wf. totem", "wf"},
+		["mana spring"] = {"m. s. t", "mana spring", "ms. totem", "m.s.t", "mana spr"},
+		["mana tide"] = {"m. t. t", "mana tide", "mt. totem", "m.t.t"},
+		["healing stream"] = {"h. s. t", "healing stream", "hs. totem", "h.s.t"},
+		["searing"] = {"s. totem", "searing", "se. totem"},
+		["flametongue"] = {"f. t", "flametongue", "ft. totem", "f.t", "flame"},
+		["magma"] = {"ma. totem", "magma"},
+		["stoneclaw"] = {"sc. totem", "stoneclaw"},
+		["stoneskin"] = {"ss. totem", "stoneskin"},
+		["strength of earth"] = {"s. o. e", "strength", "soe"},
+		["wrath of air"] = {"w. a. t", "wrath of air", "woa", "w.a.t"},
+		["totem of wrath"] = {"t. o. w", "totem of wrath", "tow"},
+		["fire resistance"] = {"f. r. t", "fire res"},
+		["frost resistance"] = {"fr. r. t", "frost res"},
+		["nature resistance"] = {"n. r. t", "nature res"},
+		["disease cleansing"] = {"d. c. t", "disease"},
+		["fire nova"] = {"f. n. t", "fire nova", "fn"},
+	}
+	
+	for totemName, abbrevList in pairs(totemAbbreviations) do
+		for _, abbrev in ipairs(abbrevList) do
+			if lowerText:find(abbrev, 1, true) then
+				for fullName, data in pairs(totemNameTotemData) do
+					if fullName:lower():find(totemName, 1, true) then
+						return data
+					end
+				end
+			end
+		end
+	end
+	
+	return nil
+end
+
 -- Helper function to find unit for a nameplate
 local function GetNameplateUnit(nameplate)
 	-- Try C_NamePlate API first
@@ -307,8 +354,6 @@ end
 function TotemPlates:Initialize()
 	local hasTurboplates = IsAddOnLoaded("Turboplates") or IsAddOnLoaded("TurboPlates")
 	
-	Gladdy:Print("TotemPlates Init: Turboplates detected = " .. tostring(hasTurboplates))
-	
 	if hasTurboplates then
 		local saved = nil
 		
@@ -319,19 +364,14 @@ function TotemPlates:Initialize()
 			saved = GladdyXZ.global.totemPlatesChoice
 		end
 		
-		Gladdy:Print("TotemPlates Init: saved preference = " .. tostring(saved))
-		
 		if saved == "gladdy" then
 			if TurboPlatesDB then
 				TurboPlatesDB.totemDisplay = "disabled"
 			end
-			Gladdy:Print("TotemPlates: Using Gladdy mode")
 		elseif saved == "turboplates" then
 			Gladdy.db.npTotems = false
-			Gladdy:Print("TotemPlates: Using Turboplates mode")
 			return
 		elseif not saved then
-			Gladdy:Print("TotemPlates: No preference saved, showing popup in 2 seconds...")
 			StaticPopupDialogs["GLADDY_TOTEMPLATES_CHOICE"] = {
 				text = "Both Gladdy and Turboplates can display totem icons.\n\nWhich addon should handle totem nameplates?\n\n(Gladdy has click-to-target and pulse timers)",
 				button1 = "Gladdy",
@@ -344,14 +384,10 @@ function TotemPlates:Initialize()
 					if not GladdyXZ.global then GladdyXZ.global = {} end
 					GladdyXZ.global.totemPlatesChoice = "gladdy"
 					
-					Gladdy:Print("DEBUG: TurboPlatesDB exists = " .. tostring(TurboPlatesDB ~= nil))
 					if TurboPlatesDB then
-						Gladdy:Print("DEBUG: TurboPlatesDB.totemDisplay BEFORE = " .. tostring(TurboPlatesDB.totemDisplay))
 						TurboPlatesDB.totemDisplay = "disabled"
-						Gladdy:Print("DEBUG: TurboPlatesDB.totemDisplay AFTER = " .. tostring(TurboPlatesDB.totemDisplay))
 					end
 					Gladdy:Print("TotemPlates: Using Gladdy (Turboplates totem icons disabled)")
-					Gladdy:Print("DEBUG: ReloadUI will be called now...")
 					ReloadUI()
 				end,
 				OnCancel = function()
@@ -474,9 +510,13 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 		local totem = nameplate.gladdyTotemFrame
 		if ( totem and totem.nametext ) then
 			local nameplateText = totem.nametext:GetText()
-			local totemData = totemNameTotemData[nameplateText]
+			local totemDataMatch = FindTotemData(nameplateText)
+			
+			if not totemDataMatch and nameplateText then
+				Gladdy:Print("DEBUG: No totem match for: " .. nameplateText)
+			end
 
-			if ( totemData ) then
+			if ( totemDataMatch ) then
 				if ( TotemPlates:NameplateTypeValid(totem) ) then
 					local totemInfo = Gladdy.db.npTotemColors["totem" .. totemData.id]
 
