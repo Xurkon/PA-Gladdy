@@ -24,7 +24,9 @@ local Healthbar = Gladdy:NewModule("Health Bar", 100, {
     healthBarStatusBarColorMin = { r = 1, g = 0, b = 0, a = 1 },
     healthFrameStrata = "MEDIUM",
     healthFrameLevel = 1,
-    healthBarStealthColor = { r = 0.66, g = 0.66, b = 0.66, a = 1 },
+    healthBarStealthColor = { r = 0.4, g = 0.4, b = 0.6, a = 0.7 },  -- Dark blue-purple, semi-transparent for better stealth visibility
+    healthBarStealthBorderEnabled = true,
+    healthBarStealthBorderColor = { r = 0.5, g = 0.0, b = 0.8, a = 1 },  -- Purple border for stealth
     --font
     healthBarFontColor = { r = 1, g = 1, b = 1, a = 1 },
     healthBarNameFontSize = 12,
@@ -183,16 +185,23 @@ function Healthbar:SetHealthStatusBarColor(unit, health, healthMax)
         return
     end
 
-    -- For non-stealth coloring, we need valid health values
+    -- Not stealthed - always reset background color to normal
+    healthBar.bg:SetVertexColor(Gladdy:SetColor(Gladdy.db.healthBarBgColor))
+
+    -- For health-based coloring, we need valid health values
     if not health or not healthMax then
+        -- Even without health values, apply class color if available
+        if button.class and button.class ~= "" and RAID_CLASS_COLORS[button.class] and Gladdy.db.healthBarClassColored then
+            healthBar.hp:SetStatusBarColor(
+                    RAID_CLASS_COLORS[button.class].r,
+                    RAID_CLASS_COLORS[button.class].g,
+                    RAID_CLASS_COLORS[button.class].b, 1)
+        end
         return
     end
 
     healthBar.hp:SetMinMaxValues(0, healthMax)
     healthBar.hp:SetValue(health)
-
-    -- Not stealthed - use normal background color
-    healthBar.bg:SetVertexColor(Gladdy:SetColor(Gladdy.db.healthBarBgColor))
 
     if not Gladdy.db.healthBarClassColored then
         if Gladdy.db.healthBarColoredByCurrentHp then
@@ -329,6 +338,9 @@ function Healthbar:ResetUnit(unit)
     healthBar.hp:SetValue(0)
     healthBar.hp.current = nil
     healthBar.hp.max = nil
+    -- Reset stealth state and border color
+    healthBar.hp.stealth = nil
+    healthBar:SetBackdropBorderColor(Gladdy:SetColor(Gladdy.db.healthBarBorderColor))
 end
 
 function Healthbar:Test(unit)
@@ -408,6 +420,13 @@ function Healthbar:ENEMY_STEALTH(unit, stealth)
     end
 
     healthBar.hp.stealth = stealth
+
+    -- Update border color based on stealth state
+    if stealth and Gladdy.db.healthBarStealthBorderEnabled then
+        healthBar:SetBackdropBorderColor(Gladdy:SetColor(Gladdy.db.healthBarStealthBorderColor))
+    else
+        healthBar:SetBackdropBorderColor(Gladdy:SetColor(Gladdy.db.healthBarBorderColor))
+    end
 
     Healthbar:SetHealthStatusBarColor(unit, healthBar.hp.current, healthBar.hp.max)
 end
@@ -529,8 +548,24 @@ function Healthbar:GetOptions()
                         healthBarStealthColor = Gladdy:colorOption({
                             type = "color",
                             name = L["Stealth Color"],
+                            desc = L["Color of the health bar when target is stealthed"] or "Color of the health bar when target is stealthed",
                             order = 3,
                             hasAlpha = true,
+                        }),
+                        healthBarStealthBorderEnabled = Gladdy:option({
+                            type = "toggle",
+                            name = L["Stealth Border"] or "Stealth Border",
+                            desc = L["Change border color when target is stealthed"] or "Change border color when target is stealthed",
+                            order = 3.5,
+                            width = "normal",
+                        }),
+                        healthBarStealthBorderColor = Gladdy:colorOption({
+                            type = "color",
+                            name = L["Stealth Border Color"] or "Stealth Border Color",
+                            desc = L["Border color when target is stealthed"] or "Border color when target is stealthed",
+                            order = 3.6,
+                            hasAlpha = true,
+                            disabled = function() return not Gladdy.db.healthBarStealthBorderEnabled end,
                         }),
                         healthBarBgColor = Gladdy:colorOption({
                             type = "color",

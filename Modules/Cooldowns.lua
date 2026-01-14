@@ -18,6 +18,38 @@ local function tableLength(tbl)
 	return getN
 end
 
+-- Specializations per class
+local CLASS_SPECS = {
+	["WARRIOR"] = { "Arms", "Fury", "Protection" },
+	["PALADIN"] = { "Holy", "Protection", "Retribution" },
+	["HUNTER"] = { "Beast Mastery", "Marksmanship", "Survival" },
+	["ROGUE"] = { "Assassination", "Combat", "Subtlety" },
+	["PRIEST"] = { "Discipline", "Holy", "Shadow" },
+	["DEATHKNIGHT"] = { "Blood", "Frost", "Unholy" },
+	["SHAMAN"] = { "Elemental", "Enhancement", "Restoration" },
+	["MAGE"] = { "Arcane", "Fire", "Frost" },
+	["WARLOCK"] = { "Affliction", "Demonology", "Destruction" },
+	["DRUID"] = { "Balance", "Feral", "Restoration" },
+}
+
+-- Get specs for a class (returns table with localized spec names)
+local function getSpecsForClass(class)
+	if class == "ALL" or class == "NONE" or not class then
+		return nil
+	end
+	local specs = CLASS_SPECS[class]
+	if not specs then
+		return nil
+	end
+	-- Return localized names
+	local localizedSpecs = {}
+	for _, spec in ipairs(specs) do
+		local localizedName = L[spec] or spec
+		tinsert(localizedSpecs, localizedName)
+	end
+	return localizedSpecs
+end
+
 local function getDefaultCooldown()
 	local cooldowns = {}
 	local cooldownsOrder = {}
@@ -83,6 +115,10 @@ local Cooldowns = Gladdy:NewModule("Cooldowns", nil, {
 	customCooldownInput = "",
 	customCooldownDuration = "60",
 	customCooldownClass = "ALL",
+	customCooldownSpec = "NONE",
+	-- Cooldown duration overrides - allows users to customize individual spell cooldowns
+	-- Format: cooldownDurationOverrides[spellId] = customDuration (in seconds)
+	cooldownDurationOverrides = {},
 })
 
 function Cooldowns:Initialize()
@@ -90,6 +126,10 @@ function Cooldowns:Initialize()
 	self.cooldownSpellIds = {}
 	self.spellTextures = {}
 	self.iconCache = {}
+	-- Ensure cooldownDurationOverrides table exists
+	if not Gladdy.db.cooldownDurationOverrides then
+		Gladdy.db.cooldownDurationOverrides = {}
+	end
 	-- Load built-in cooldowns
 	for _,spellTable in pairs(Gladdy:GetCooldownList()) do
 		for spellId,val in pairs(spellTable) do
@@ -129,17 +169,33 @@ function Cooldowns:GetCustomCooldownsTable()
 	local str = Gladdy.db.customCooldownsString or ""
 	if str == "" then return result end
 
-	-- Format: "spellId,cd,class,name,texture;spellId2,cd2,class2,name2,texture2;..."
+	-- Format: "spellId,cd,class,spec,name,texture;spellId2,cd2,class2,spec2,name2,texture2;..."
+	-- For backwards compatibility, also support old format without spec
 	for entry in str:gmatch("([^;]+)") do
-		local spellId, cd, class, name, texture = entry:match("^(%d+),(%d+),([^,]+),([^,]+),(.+)$")
-		if spellId then
+		-- Try new format with spec first (6 fields)
+		local spellId, cd, class, spec, name, texture = entry:match("^(%d+),(%d+),([^,]+),([^,]+),([^,]+),(.+)$")
+		if spellId and name then
 			result[spellId] = {
 				spellId = tonumber(spellId),
 				cd = tonumber(cd),
 				class = class,
+				spec = spec ~= "NONE" and spec or nil,
 				spellName = name,
 				texture = texture,
 			}
+		else
+			-- Fallback to old format without spec (5 fields)
+			spellId, cd, class, name, texture = entry:match("^(%d+),(%d+),([^,]+),([^,]+),(.+)$")
+			if spellId then
+				result[spellId] = {
+					spellId = tonumber(spellId),
+					cd = tonumber(cd),
+					class = class,
+					spec = nil,
+					spellName = name,
+					texture = texture,
+				}
+			end
 		end
 	end
 	return result
@@ -152,10 +208,12 @@ function Cooldowns:SaveCustomCooldownsTable(tbl)
 		-- Escape commas in name and texture by replacing with placeholder
 		local safeName = (data.spellName or "Unknown"):gsub(",", "%%COMMA%%")
 		local safeTexture = (data.texture or "Interface\\Icons\\INV_Misc_QuestionMark"):gsub(",", "%%COMMA%%")
-		local entry = string.format("%d,%d,%s,%s,%s",
+		local safeSpec = data.spec or "NONE"
+		local entry = string.format("%d,%d,%s,%s,%s,%s",
 			data.spellId,
 			data.cd,
 			data.class or "ALL",
+			safeSpec,
 			safeName,
 			safeTexture
 		)
@@ -185,8 +243,9 @@ function Cooldowns:LoadCustomCooldowns()
 		local spellName = (data.spellName or "Unknown"):gsub("%%COMMA%%", ",")
 		local texture = (data.texture or ""):gsub("%%COMMA%%", ",")
 		local classFilter = data.class or "ALL"
+		local specFilter = data.spec  -- Can be nil for "all specs"
 
-		self:RegisterCustomCooldown(spellName, data.cd, data.spellId, texture, classFilter, true)
+		self:RegisterCustomCooldown(spellName, data.cd, data.spellId, texture, classFilter, specFilter, true)
 		-- Make sure it's enabled
 		Gladdy.db.cooldownCooldowns[tostring(data.spellId)] = true
 		count = count + 1
@@ -196,7 +255,7 @@ function Cooldowns:LoadCustomCooldowns()
 	end
 end
 
-function Cooldowns:AddCustomCooldown(spellName, cooldownDuration, classFilter)
+function Cooldowns:AddCustomCooldown(spellName, cooldownDuration, classFilter, specFilter)
 	if not spellName or spellName == "" then
 		return false, "Spell name is empty"
 	end
@@ -257,6 +316,9 @@ function Cooldowns:AddCustomCooldown(spellName, cooldownDuration, classFilter)
 	-- Default class to ALL if not specified
 	local selectedClass = classFilter or "ALL"
 
+	-- Spec filter (nil means all specs)
+	local selectedSpec = (specFilter and specFilter ~= "NONE" and specFilter ~= "") and specFilter or nil
+
 	-- Get current custom cooldowns table
 	local customCooldowns = self:GetCustomCooldownsTable()
 
@@ -268,6 +330,7 @@ function Cooldowns:AddCustomCooldown(spellName, cooldownDuration, classFilter)
 		texture = texture or "Interface\\Icons\\INV_Misc_QuestionMark",
 		spellName = name,
 		class = selectedClass,
+		spec = selectedSpec,
 	}
 
 	-- Save back to string format (this persists!)
@@ -275,7 +338,7 @@ function Cooldowns:AddCustomCooldown(spellName, cooldownDuration, classFilter)
 	self.customCooldownsCache = customCooldowns
 
 	-- Register the cooldown in runtime lists
-	self:RegisterCustomCooldown(name, cd, spellId, texture, selectedClass, false)
+	self:RegisterCustomCooldown(name, cd, spellId, texture, selectedClass, selectedSpec, false)
 
 	-- Enable it by default
 	Gladdy.db.cooldownCooldowns[tostring(spellId)] = true
@@ -286,22 +349,32 @@ function Cooldowns:AddCustomCooldown(spellName, cooldownDuration, classFilter)
 	end
 
 	local classText = selectedClass == "ALL" and "All Classes" or selectedClass
-	return true, "Added: " .. name .. " (CD: " .. cd .. "s, Class: " .. classText .. ")"
+	local specText = selectedSpec and (" - " .. selectedSpec) or ""
+	return true, "Added: " .. name .. " (CD: " .. cd .. "s, Class: " .. classText .. specText .. ")"
 end
 
-function Cooldowns:RegisterCustomCooldown(spellName, cd, spellId, texture, classFilter, skipRefresh)
+function Cooldowns:RegisterCustomCooldown(spellName, cd, spellId, texture, classFilter, specFilter, skipRefresh)
 	local targetClass = classFilter or "ALL"
+	local targetSpec = specFilter  -- Can be nil for "all specs"
 
 	-- Add to spell tracking tables
 	self.cooldownSpellIds[spellName] = spellId
 	self.spellTextures[spellId] = texture or "Interface\\Icons\\INV_Misc_QuestionMark"
+
+	-- Build cooldown value - simple number if no spec, table with spec if spec is specified
+	local cooldownValue
+	if targetSpec then
+		cooldownValue = { cd = cd, spec = targetSpec }
+	else
+		cooldownValue = cd
+	end
 
 	if targetClass == "ALL" then
 		-- Add to CUSTOM list (applies to all classes)
 		if not Gladdy:GetCooldownList()["CUSTOM"] then
 			Gladdy:GetCooldownList()["CUSTOM"] = {}
 		end
-		Gladdy:GetCooldownList()["CUSTOM"][spellId] = cd
+		Gladdy:GetCooldownList()["CUSTOM"][spellId] = cooldownValue
 
 		-- Add to CUSTOM order table
 		if not Gladdy.db.cooldownCooldownsOrder["CUSTOM"] then
@@ -315,7 +388,7 @@ function Cooldowns:RegisterCustomCooldown(spellName, cd, spellId, texture, class
 		if not Gladdy:GetCooldownList()[targetClass] then
 			Gladdy:GetCooldownList()[targetClass] = {}
 		end
-		Gladdy:GetCooldownList()[targetClass][spellId] = cd
+		Gladdy:GetCooldownList()[targetClass][spellId] = cooldownValue
 
 		-- Add to class order table
 		if not Gladdy.db.cooldownCooldownsOrder[targetClass] then
@@ -383,6 +456,71 @@ function Cooldowns:RemoveCustomCooldown(key)
 
 	Gladdy:UpdateFrame()
 	return true, "Removed: " .. spellName
+end
+
+---------------------
+-- Cooldown Duration Helpers
+---------------------
+
+-- Get the effective cooldown duration for a spell, considering user overrides
+function Cooldowns:GetEffectiveCooldown(spellId, unitClass, spec)
+	-- Check for user override first
+	local override = Gladdy.db.cooldownDurationOverrides[tostring(spellId)]
+	if override and override > 0 then
+		return override
+	end
+
+	-- Get default cooldown from cooldownList
+	local cooldown = Gladdy:GetCooldownList()[unitClass] and Gladdy:GetCooldownList()[unitClass][spellId]
+	if not cooldown and Gladdy:GetCooldownList()["CUSTOM"] then
+		cooldown = Gladdy:GetCooldownList()["CUSTOM"][spellId]
+	end
+
+	if not cooldown then
+		return nil
+	end
+
+	-- Handle simple number cooldowns
+	if type(cooldown) == "number" then
+		return cooldown
+	end
+
+	-- Handle table cooldowns with spec-specific durations
+	if type(cooldown) == "table" then
+		if spec and cooldown[spec] then
+			return cooldown[spec]
+		end
+		return cooldown.cd
+	end
+
+	return nil
+end
+
+-- Get the default (unmodified) cooldown duration for display in options
+function Cooldowns:GetDefaultCooldown(spellId, unitClass)
+	local cooldown = Gladdy:GetCooldownList()[unitClass] and Gladdy:GetCooldownList()[unitClass][spellId]
+	if not cooldown and Gladdy:GetCooldownList()["CUSTOM"] then
+		cooldown = Gladdy:GetCooldownList()["CUSTOM"][spellId]
+	end
+
+	if not cooldown then
+		return 60 -- Default fallback
+	end
+
+	if type(cooldown) == "number" then
+		return cooldown
+	end
+
+	if type(cooldown) == "table" then
+		return cooldown.cd or 60
+	end
+
+	return 60
+end
+
+-- Reset a cooldown override to its default value
+function Cooldowns:ResetCooldownOverride(spellId)
+	Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = nil
 end
 
 ---------------------
@@ -910,16 +1048,22 @@ function Cooldowns:CooldownUsed(unit, unitClass, spellId, expirationTimeInSecond
 							end
 						end
 						if not skip then
-							self:CooldownStart(button, spellID, sharedCD)
+							-- Check for user override on shared cooldowns
+							local sharedOverride = Gladdy.db.cooldownDurationOverrides[tostring(spellID)]
+							self:CooldownStart(button, spellID, sharedOverride or sharedCD)
 						end
 					end
 				end
 			end
 		end
 
+		-- Check for user override on main cooldown duration
+		local cdOverride = Gladdy.db.cooldownDurationOverrides[tostring(spellId)]
+		local effectiveCD = cdOverride or cd
+
 		if (Gladdy.db.cooldown) then
-			-- start cooldown
-			self:CooldownStart(button, spellId, cd, expirationTimeInSeconds and (GetTime() + expirationTimeInSeconds - cd) or nil)
+			-- start cooldown with effective duration (user override or default)
+			self:CooldownStart(button, spellId, effectiveCD, expirationTimeInSeconds and (GetTime() + expirationTimeInSeconds - effectiveCD) or nil)
 		end
 
 		--[[ announcement
@@ -1407,7 +1551,47 @@ function Cooldowns:GetOptions()
 					},
 					sorting = {"ALL", "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "DEATHKNIGHT", "SHAMAN", "MAGE", "WARLOCK", "DRUID"},
 					get = function() return Gladdy.db.customCooldownClass or "ALL" end,
-					set = function(_, value) Gladdy.db.customCooldownClass = value end,
+					set = function(_, value)
+						Gladdy.db.customCooldownClass = value
+						-- Reset spec when class changes
+						Gladdy.db.customCooldownSpec = "NONE"
+						LibStub("AceConfigRegistry-3.0"):NotifyChange("Gladdy")
+					end,
+				},
+				specSelect = {
+					type = "select",
+					name = L["Specialization"] or "Specialization",
+					desc = L["Select which specialization this cooldown applies to (optional)"] or "Select which specialization this cooldown applies to (optional). Leave as 'All Specs' if the cooldown should show for all specs of the selected class.",
+					order = 4.6,
+					width = "normal",
+					values = function()
+						local selectedClass = Gladdy.db.customCooldownClass or "ALL"
+						local specs = getSpecsForClass(selectedClass)
+						local values = { ["NONE"] = L["All Specs"] or "All Specs" }
+						if specs then
+							for _, specName in ipairs(specs) do
+								values[specName] = specName
+							end
+						end
+						return values
+					end,
+					sorting = function()
+						local selectedClass = Gladdy.db.customCooldownClass or "ALL"
+						local specs = getSpecsForClass(selectedClass)
+						local sorting = { "NONE" }
+						if specs then
+							for _, specName in ipairs(specs) do
+								tinsert(sorting, specName)
+							end
+						end
+						return sorting
+					end,
+					disabled = function()
+						local selectedClass = Gladdy.db.customCooldownClass or "ALL"
+						return selectedClass == "ALL"
+					end,
+					get = function() return Gladdy.db.customCooldownSpec or "NONE" end,
+					set = function(_, value) Gladdy.db.customCooldownSpec = value end,
 				},
 				addButton = {
 					type = "execute",
@@ -1417,9 +1601,15 @@ function Cooldowns:GetOptions()
 						local spellName = Gladdy.db.customCooldownInput
 						local cd = tonumber(Gladdy.db.customCooldownDuration) or 60
 						local classFilter = Gladdy.db.customCooldownClass or "ALL"
-						local success, msg = Cooldowns:AddCustomCooldown(spellName, cd, classFilter)
+						local specFilter = Gladdy.db.customCooldownSpec
+						-- Don't pass spec if class is ALL or spec is NONE
+						if classFilter == "ALL" or specFilter == "NONE" or specFilter == "" then
+							specFilter = nil
+						end
+						local success, msg = Cooldowns:AddCustomCooldown(spellName, cd, classFilter, specFilter)
 						if success then
 							Gladdy.db.customCooldownInput = ""
+							Gladdy.db.customCooldownSpec = "NONE"
 							DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[Gladdy]|r " .. msg)
 							-- Refresh the custom list display
 							if Gladdy.options and Gladdy.options.args["Cooldowns"] then
@@ -1467,7 +1657,8 @@ function Cooldowns:GetOptions()
 						for key, data in pairs(customCooldowns) do
 							count = count + 1
 							local name = (data.spellName or "Unknown"):gsub("%%COMMA%%", ",")
-							DEFAULT_CHAT_FRAME:AddMessage("  " .. count .. ". " .. name .. " (ID: " .. tostring(data.spellId) .. ", CD: " .. tostring(data.cd) .. "s, Class: " .. (data.class or "ALL") .. ")")
+							local specInfo = data.spec and (", Spec: " .. data.spec) or ""
+							DEFAULT_CHAT_FRAME:AddMessage("  " .. count .. ". " .. name .. " (ID: " .. tostring(data.spellId) .. ", CD: " .. tostring(data.cd) .. "s, Class: " .. (data.class or "ALL") .. specInfo .. ")")
 						end
 						if count == 0 then
 							DEFAULT_CHAT_FRAME:AddMessage("  No custom cooldowns stored.")
@@ -1475,8 +1666,13 @@ function Cooldowns:GetOptions()
 						-- Also check CUSTOM list
 						if Gladdy:GetCooldownList()["CUSTOM"] then
 							DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00[CUSTOM Cooldown List (Runtime)]|r")
-							for spellId, cd in pairs(Gladdy:GetCooldownList()["CUSTOM"]) do
-								DEFAULT_CHAT_FRAME:AddMessage("  SpellID: " .. tostring(spellId) .. " -> CD: " .. tostring(cd))
+							for spellId, cdData in pairs(Gladdy:GetCooldownList()["CUSTOM"]) do
+								if type(cdData) == "table" then
+									local specInfo = cdData.spec and (", Spec: " .. cdData.spec) or ""
+									DEFAULT_CHAT_FRAME:AddMessage("  SpellID: " .. tostring(spellId) .. " -> CD: " .. tostring(cdData.cd) .. specInfo)
+								else
+									DEFAULT_CHAT_FRAME:AddMessage("  SpellID: " .. tostring(spellId) .. " -> CD: " .. tostring(cdData))
+								end
 							end
 						end
 					end,
@@ -1514,8 +1710,10 @@ function Cooldowns:GetCustomCooldownListOptions()
 		local spellName = (data.spellName or ("Spell " .. key)):gsub("%%COMMA%%", ",")
 		local cd = data.cd or 60
 		local classFilter = data.class or "ALL"
+		local specFilter = data.spec
 		local classColor = CLASS_COLORS[classFilter] or "|cff00ff00"
 		local classDisplay = classFilter == "ALL" and "All Classes" or classFilter
+		local specDisplay = specFilter and ("|cffaaaaaa - " .. specFilter .. "|r") or ""
 
 		options["spell_" .. key] = {
 			type = "group",
@@ -1534,7 +1732,7 @@ function Cooldowns:GetCustomCooldownListOptions()
 					name = "|cffffd100" .. spellName .. "|r\n" ..
 						   "|cff888888Spell ID:|r " .. tostring(spellId) .. "\n" ..
 						   "|cff888888Cooldown:|r " .. cd .. "s\n" ..
-						   "|cff888888Applies to:|r " .. classColor .. classDisplay .. "|r",
+						   "|cff888888Applies to:|r " .. classColor .. classDisplay .. "|r" .. specDisplay,
 					order = 2,
 					width = 1.3,
 					fontSize = "medium",
@@ -1572,8 +1770,10 @@ function Cooldowns:GetCustomCooldownListOptions()
 				   "2. Paste the link in the 'Spell Name' field above\n" ..
 				   "3. Set the cooldown duration\n" ..
 				   "4. Select the class (or All Classes)\n" ..
-				   "5. Click 'Add Cooldown'\n\n" ..
-				   "|cff00ff00Custom cooldowns appear in the Cooldowns tab under their class!|r",
+				   "5. |cff00ff00(Optional)|r Select a specialization to only show this cooldown for that spec\n" ..
+				   "6. Click 'Add Cooldown'\n\n" ..
+				   "|cff00ff00Custom cooldowns appear in the Cooldowns tab under their class!|r\n" ..
+				   "|cffaaaaaa(Spec-filtered cooldowns only show when the enemy's spec is detected)|r",
 			order = 1,
 			fontSize = "medium",
 		}
@@ -1602,6 +1802,10 @@ function Cooldowns:GetCooldownOptions()
 		}
 		local tblLength = tableLength(Gladdy.db.cooldownCooldownsOrder[class] or {})
 		for spellId,cooldown in pairs(Gladdy:GetCooldownList()[class]) do
+			-- Calculate default cooldown for display
+			local defaultCD = type(cooldown) == "number" and cooldown or (type(cooldown) == "table" and cooldown.cd or 60)
+			local specInfo = type(cooldown) == "table" and cooldown.spec and (" - " .. cooldown.spec) or ""
+
 			group[class].args[tostring(spellId)] = {
 				name = "",
 				type = "group",
@@ -1610,9 +1814,9 @@ function Cooldowns:GetCooldownOptions()
 				args = {
 					toggle = {
 						type = "toggle",
-						name = (select(1, GetSpellInfo(spellId)) or ("SpellID:" .. spellId)) .. (type(cooldown) == "table" and cooldown.spec and (" - " .. cooldown.spec) or ""),
+						name = (select(1, GetSpellInfo(spellId)) or ("SpellID:" .. spellId)) .. specInfo,
 						order = 1,
-						width = 1.1,
+						width = 0.9,
 						image = select(3, GetSpellInfo(spellId)) or "Interface\\Icons\\INV_Misc_QuestionMark",
 						get = function()
 							return Gladdy.db.cooldownCooldowns[tostring(spellId)]
@@ -1626,6 +1830,42 @@ function Cooldowns:GetCooldownOptions()
 							end
 							Gladdy:UpdateFrame()
 						end
+					},
+					cdInput = {
+						type = "input",
+						name = "",
+						desc = L["Cooldown duration in seconds"] or "Cooldown duration in seconds (default: " .. defaultCD .. "s)",
+						order = 1.5,
+						width = 0.4,
+						get = function()
+							local override = Gladdy.db.cooldownDurationOverrides[tostring(spellId)]
+							if override then
+								return tostring(override)
+							end
+							return tostring(defaultCD)
+						end,
+						set = function(_, value)
+							local numVal = tonumber(value)
+							if numVal and numVal > 0 then
+								if numVal == defaultCD then
+									-- If setting back to default, remove the override
+									Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = nil
+								else
+									Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = numVal
+								end
+							end
+						end,
+					},
+					resetCD = {
+						type = "execute",
+						name = "R",
+						desc = L["Reset to default"] or "Reset to default (" .. defaultCD .. "s)",
+						order = 1.6,
+						width = 0.15,
+						func = function()
+							Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = nil
+							LibStub("AceConfigRegistry-3.0"):NotifyChange("Gladdy")
+						end,
 					},
 					uparrow = {
 						type = "execute",
@@ -1691,6 +1931,9 @@ function Cooldowns:GetCooldownOptions()
 				local spellId = data.spellId
 				local spellName = (data.spellName or "Unknown"):gsub("%%COMMA%%", ",")
 				local texture = (data.texture or "Interface\\Icons\\INV_Misc_QuestionMark"):gsub("%%COMMA%%", ",")
+				local customDefaultCD = data.cd or 60
+				local customSpec = data.spec
+				local specDisplay = customSpec and (" - " .. customSpec) or ""
 
 				group[class].args["custom_" .. tostring(spellId)] = {
 					name = "",
@@ -1700,9 +1943,9 @@ function Cooldowns:GetCooldownOptions()
 					args = {
 						toggle = {
 							type = "toggle",
-							name = "|cff00ff00[Custom]|r " .. spellName .. " (" .. data.cd .. "s)",
+							name = "|cff00ff00[Custom]|r " .. spellName .. specDisplay,
 							order = 1,
-							width = 1.1,
+							width = 0.9,
 							image = texture,
 							get = function()
 								return Gladdy.db.cooldownCooldowns[tostring(spellId)]
@@ -1716,6 +1959,26 @@ function Cooldowns:GetCooldownOptions()
 								end
 								Gladdy:UpdateFrame()
 							end
+						},
+						cdInput = {
+							type = "input",
+							name = "",
+							desc = L["Cooldown duration in seconds"] or "Cooldown duration in seconds",
+							order = 1.5,
+							width = 0.4,
+							get = function()
+								local override = Gladdy.db.cooldownDurationOverrides[tostring(spellId)]
+								if override then
+									return tostring(override)
+								end
+								return tostring(customDefaultCD)
+							end,
+							set = function(_, value)
+								local numVal = tonumber(value)
+								if numVal and numVal > 0 then
+									Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = numVal
+								end
+							end,
 						},
 						remove = {
 							type = "execute",
@@ -1755,6 +2018,7 @@ function Cooldowns:GetCooldownOptions()
 				local spellId = data.spellId
 				local spellName = (data.spellName or "Unknown"):gsub("%%COMMA%%", ",")
 				local texture = (data.texture or "Interface\\Icons\\INV_Misc_QuestionMark"):gsub("%%COMMA%%", ",")
+				local customDefaultCD = data.cd or 60
 
 				group["CUSTOM"].args["custom_" .. tostring(spellId)] = {
 					name = "",
@@ -1764,9 +2028,9 @@ function Cooldowns:GetCooldownOptions()
 					args = {
 						toggle = {
 							type = "toggle",
-							name = spellName .. " (" .. data.cd .. "s)",
+							name = spellName,
 							order = 1,
-							width = 1.1,
+							width = 0.9,
 							image = texture,
 							get = function()
 								return Gladdy.db.cooldownCooldowns[tostring(spellId)]
@@ -1780,6 +2044,26 @@ function Cooldowns:GetCooldownOptions()
 								end
 								Gladdy:UpdateFrame()
 							end
+						},
+						cdInput = {
+							type = "input",
+							name = "",
+							desc = L["Cooldown duration in seconds"] or "Cooldown duration in seconds",
+							order = 1.5,
+							width = 0.4,
+							get = function()
+								local override = Gladdy.db.cooldownDurationOverrides[tostring(spellId)]
+								if override then
+									return tostring(override)
+								end
+								return tostring(customDefaultCD)
+							end,
+							set = function(_, value)
+								local numVal = tonumber(value)
+								if numVal and numVal > 0 then
+									Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = numVal
+								end
+							end,
 						},
 						remove = {
 							type = "execute",
@@ -1800,6 +2084,10 @@ function Cooldowns:GetCooldownOptions()
 		for spellId,cooldown in pairs(Gladdy:GetCooldownList()[race]) do
 			local tblLength = tableLength(Gladdy.db.cooldownCooldownsOrder[cooldown.class])
 			local class = cooldown.class
+			-- Calculate default cooldown for racials
+			local racialDefaultCD = type(cooldown) == "number" and cooldown or (type(cooldown) == "table" and cooldown.cd or 120)
+			local specInfo = type(cooldown) == "table" and cooldown.spec and (" - " .. cooldown.spec) or ""
+
 			group[class].args[tostring(spellId)] = {
 				name = "",
 				type = "group",
@@ -1808,10 +2096,10 @@ function Cooldowns:GetCooldownOptions()
 				args = {
 					toggle = {
 						type = "toggle",
-						name = (select(1, GetSpellInfo(spellId)) or ("SpellID:" .. spellId)) .. (type(cooldown) == "table" and cooldown.spec and (" - " .. cooldown.spec) or ""),
+						name = (select(1, GetSpellInfo(spellId)) or ("SpellID:" .. spellId)) .. specInfo,
 						order = 1,
-						width = 1.1,
-						image = select(3, GetSpellInfo(spellId)) or "Interface\Icons\INV_Misc_QuestionMark",
+						width = 0.9,
+						image = select(3, GetSpellInfo(spellId)) or "Interface\\Icons\\INV_Misc_QuestionMark",
 						get = function()
 							return Gladdy.db.cooldownCooldowns[tostring(spellId)]
 						end,
@@ -1819,6 +2107,41 @@ function Cooldowns:GetCooldownOptions()
 							Gladdy.db.cooldownCooldowns[tostring(spellId)] = value
 							Gladdy:UpdateFrame()
 						end
+					},
+					cdInput = {
+						type = "input",
+						name = "",
+						desc = L["Cooldown duration in seconds"] or "Cooldown duration in seconds (default: " .. racialDefaultCD .. "s)",
+						order = 1.5,
+						width = 0.4,
+						get = function()
+							local override = Gladdy.db.cooldownDurationOverrides[tostring(spellId)]
+							if override then
+								return tostring(override)
+							end
+							return tostring(racialDefaultCD)
+						end,
+						set = function(_, value)
+							local numVal = tonumber(value)
+							if numVal and numVal > 0 then
+								if numVal == racialDefaultCD then
+									Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = nil
+								else
+									Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = numVal
+								end
+							end
+						end,
+					},
+					resetCD = {
+						type = "execute",
+						name = "R",
+						desc = L["Reset to default"] or "Reset to default (" .. racialDefaultCD .. "s)",
+						order = 1.6,
+						width = 0.15,
+						func = function()
+							Gladdy.db.cooldownDurationOverrides[tostring(spellId)] = nil
+							LibStub("AceConfigRegistry-3.0"):NotifyChange("Gladdy")
+						end,
 					},
 					uparrow = {
 						type = "execute",

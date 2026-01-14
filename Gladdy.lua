@@ -237,6 +237,7 @@ end
 -- It's stored as a single key-value pair and won't be recursed into
 local DYNAMIC_DATA_TABLES = {
 	["customCooldowns"] = true,  -- Legacy, kept for compatibility
+	["cooldownDurationOverrides"] = true,  -- User-customized cooldown durations per spell
 }
 
 function Gladdy:DeleteUnknownOptions(tbl, refTbl, str)

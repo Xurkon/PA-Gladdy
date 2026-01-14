@@ -1,9 +1,33 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.8.1-Ascension
+**Current Version:** v2.9-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.9-Ascension (2026-01-14)
+
+### Merged Hutsh's Upstream Changes
+Integrated new features from Hutsh's upstream development branch:
+
+#### Cooldowns Module Enhancements
+- **Spec Filtering**: Custom cooldowns can now be filtered by class spec (e.g., Restoration Druid only)
+- **Duration Overrides**: Users can customize individual spell cooldown durations via `cooldownDurationOverrides`
+- **CLASS_SPECS Table**: Added support for all 9 classes with their 3 specializations each
+- **Improved Custom Cooldown Format**: Enhanced string serialization with spec field support
+
+#### Healthbar Module Enhancements
+- **Stealth Border**: New configurable border color for stealthed targets
+  - `healthBarStealthBorderEnabled`: Toggle purple border when target is stealthed
+  - `healthBarStealthBorderColor`: Customizable border color (default: purple `{0.5, 0.0, 0.8}`)
+- **Improved Stealth Color**: Better default stealth color (dark blue-purple `{0.4, 0.4, 0.6}`)
+- **Enhanced Color Logic**: Background color resets properly when leaving stealth
+- **Stealth State Reset**: `ResetUnit` now properly clears stealth state and restores border color
+
+#### Core Improvements
+- **DYNAMIC_DATA_TABLES**: Added `cooldownDurationOverrides` to prevent SavedVariable cleanup from deleting user customizations
 
 ---
 
