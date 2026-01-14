@@ -1,17 +1,24 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.3-Ascension
+**Current Version:** v2.9.4-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
 
 ---
 
+## v2.9.4-Ascension (2026-01-14)
+
+### Turboplates Preference Persistence Fix
+- **Fixed**: Totem plates choice now properly persists using AceDB's global storage
+- Previous fix was being cleaned up by AceDB logout handler; now uses `Gladdy.dbi.global`
+
+---
+
 ## v2.9.3-Ascension (2026-01-14)
 
-### Preference Persistence Fix
-- **Fixed**: Totem plates choice now properly saved and remembered across reloads
-- Saves directly to `GladdyXZ` SavedVariables instead of AceDB proxy
+### Preference Persistence Attempt (superseded by v2.9.4)
+- Initial attempt to fix preference persistence; replaced by AceDB global storage in v2.9.4
 
 ---
 
