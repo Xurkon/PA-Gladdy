@@ -307,6 +307,8 @@ end
 function TotemPlates:Initialize()
 	local hasTurboplates = IsAddOnLoaded("Turboplates") or IsAddOnLoaded("TurboPlates")
 	
+	Gladdy:Print("TotemPlates Init: Turboplates detected = " .. tostring(hasTurboplates))
+	
 	if hasTurboplates then
 		local saved = nil
 		
@@ -317,14 +319,19 @@ function TotemPlates:Initialize()
 			saved = GladdyXZ.global.totemPlatesChoice
 		end
 		
+		Gladdy:Print("TotemPlates Init: saved preference = " .. tostring(saved))
+		
 		if saved == "gladdy" then
 			if TurboPlatesDB then
 				TurboPlatesDB.totemDisplay = "disabled"
 			end
+			Gladdy:Print("TotemPlates: Using Gladdy mode")
 		elseif saved == "turboplates" then
 			Gladdy.db.npTotems = false
+			Gladdy:Print("TotemPlates: Using Turboplates mode")
 			return
 		elseif not saved then
+			Gladdy:Print("TotemPlates: No preference saved, showing popup in 2 seconds...")
 			StaticPopupDialogs["GLADDY_TOTEMPLATES_CHOICE"] = {
 				text = "Both Gladdy and Turboplates can display totem icons.\n\nWhich addon should handle totem nameplates?\n\n(Gladdy has click-to-target and pulse timers)",
 				button1 = "Gladdy",
