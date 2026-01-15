@@ -1,9 +1,19 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.9-Ascension
+**Current Version:** v2.10.0-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.10.0-Ascension (2026-01-15)
+
+### Druid Prowl Frame Disappearance Fix
+- **Fixed**: Druid frame no longer disappears permanently when entering Prowl
+- Added clearing of `destroyed` flag when combat log events are received for a unit
+- Added clearing of `destroyed` flag when UNIT_AURA fires for a unit
+- This ensures frames are restored even if ARENA_OPPONENT_UPDATE "seen" doesn't fire properly
 
 ---
 

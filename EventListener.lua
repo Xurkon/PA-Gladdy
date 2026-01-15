@@ -251,6 +251,13 @@ function EventListener:COMBAT_LOG_EVENT_UNFILTERED(...)
     end
 
     if destUnit then
+        -- Ascension fix: Clear destroyed flag if we receive any combat log event for this unit
+        -- This catches cases where ARENA_OPPONENT_UPDATE "seen" doesn't fire properly
+        if Gladdy.buttons[destUnit] and Gladdy.buttons[destUnit].destroyed then
+            Gladdy.buttons[destUnit].destroyed = nil
+            Gladdy:SendMessage("ENEMY_SPOTTED", destUnit)
+        end
+        
         -- diminish tracker
         -- Pass both spellID and spellName for Ascension compatibility (custom spell IDs)
         if Gladdy.buttons[destUnit] and Gladdy.db.drEnabled then
@@ -307,6 +314,11 @@ function EventListener:COMBAT_LOG_EVENT_UNFILTERED(...)
         srcUnit = string_gsub(srcUnit, "pet", "")
         if (not UnitExists(srcUnit)) then
             return
+        end
+        -- Ascension fix: Clear destroyed flag if unit is actively casting/using abilities
+        if Gladdy.buttons[srcUnit] and Gladdy.buttons[srcUnit].destroyed then
+            Gladdy.buttons[srcUnit].destroyed = nil
+            Gladdy:SendMessage("ENEMY_SPOTTED", srcUnit)
         end
         -- Clear stealth when unit performs any action EXCEPT stealth spells (Ascension fix)
         -- Don't clear stealth if they're casting Vanish/Shadowmeld (they're going INTO stealth)
@@ -485,6 +497,12 @@ function EventListener:UNIT_AURA(unit, isFullUpdate, updatedAuras)
     local button = Gladdy.buttons[unit]
     if not button then
         return
+    end
+    -- Ascension fix: Clear destroyed flag if we're receiving aura updates
+    -- Unit clearly exists if we're getting UNIT_AURA events
+    if button.destroyed then
+        button.destroyed = nil
+        Gladdy:SendMessage("ENEMY_SPOTTED", unit)
     end
     if not button.auras then
         button.auras = {}
