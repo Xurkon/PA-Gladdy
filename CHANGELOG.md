@@ -1,9 +1,19 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.9.8-Ascension
+**Current Version:** v2.9.9-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.9.9-Ascension (2026-01-14)
+
+### Totem Plates Nameplate Hiding Fix
+- **Fixed**: Underlying nameplates now properly hidden when Gladdy totem icons display
+- Uses SetAlpha(0) + Hide() on all nameplate regions and children
+- Explicitly hides nametext to prevent totem names from showing
+- Cleaned up debug statements
 
 ---
 

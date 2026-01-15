@@ -508,53 +508,56 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 		end
 
 		local totem = nameplate.gladdyTotemFrame
-		if ( totem and totem.nametext ) then
-			local nameplateText = totem.nametext:GetText()
-			local totemDataMatch = FindTotemData(nameplateText)
+		if not totem then return end
+		if not totem.nametext then return end
+		
+		local nameplateText = totem.nametext:GetText()
+		if not nameplateText then return end
+		
+		local totemDataMatch = FindTotemData(nameplateText)
 
-			if ( totemDataMatch ) then
-				if ( TotemPlates:NameplateTypeValid(totem) ) then
-					local totemInfo = Gladdy.db.npTotemColors["totem" .. totemDataMatch.id]
+		if ( totemDataMatch ) then
+			if ( TotemPlates:NameplateTypeValid(totem) ) then
+				local totemInfo = Gladdy.db.npTotemColors["totem" .. totemDataMatch.id]
 
-					if ( totemInfo.enabled ) then
-						totem.totemIcon:SetTexture(totemDataMatch.texture)
-						totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
-						totem.totemName:SetText(totemInfo.customText or "")
+				if ( totemInfo.enabled ) then
+					totem.totemIcon:SetTexture(totemDataMatch.texture)
+					totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
+					totem.totemName:SetText(totemInfo.customText or "")
 
-						TotemPlates:ToggleTotem(totem, true)
-						TotemPlates:ToggleAddon(nameplate)
-						totem.active = totemDataMatch
+					TotemPlates:ToggleTotem(totem, true)
+					TotemPlates:ToggleAddon(nameplate)
+					totem.active = totemDataMatch
 
-						-- Hybrid click-to-target: secure button if possible, pass-through otherwise
-						if not InCombatLockdown() then
-							-- Outside combat: enable secure targeting on our button
-							local unit = GetNameplateUnit(nameplate)
-							if unit then
-								totem:SetAttribute("unit", unit)
-								totem:EnableMouse(true) -- Our button handles clicks
-							end
-						else
-							-- In combat: can't set attributes, so pass clicks to underlying nameplate
-							totem:EnableMouse(false) -- Let clicks pass through to nameplate
-						end
-
-						TotemPlates:SetTotemAlpha(totem, nameplateText)
-
-						-- Check if this is a tremor or cleansing totem and add pulse timer
-						if Gladdy.db.npTotemPulseTimer and (nameplateText == "Tremor Totem" or nameplateText == "Cleansing Totem") then
-							-- Create a timestamp for the totem if it doesn't exist
-							local fakeGUID = "totem_" .. GetTime()
-							timestamp[fakeGUID] = { timeStamp = GetTime() }
-							ShowPulse(totem, timestamp[fakeGUID])
+					-- Hybrid click-to-target: secure button if possible, pass-through otherwise
+					if not InCombatLockdown() then
+						-- Outside combat: enable secure targeting on our button
+						local unit = GetNameplateUnit(nameplate)
+						if unit then
+							totem:SetAttribute("unit", unit)
+							totem:EnableMouse(true) -- Our button handles clicks
 						end
 					else
-						-- If certain totem is disabled, then hide it and the plate depending on setting.
-						if ( totem.active ) then
-							TotemPlates:ToggleTotem(totem)
-						end
-
-						TotemPlates:ToggleAddon(nameplate, not Gladdy.db.npTotemsHideDisabledTotems)
+						-- In combat: can't set attributes, so pass clicks to underlying nameplate
+						totem:EnableMouse(false) -- Let clicks pass through to nameplate
 					end
+
+					TotemPlates:SetTotemAlpha(totem, nameplateText)
+
+					-- Check if this is a tremor or cleansing totem and add pulse timer
+					if Gladdy.db.npTotemPulseTimer and (nameplateText == "Tremor Totem" or nameplateText == "Cleansing Totem") then
+						-- Create a timestamp for the totem if it doesn't exist
+						local fakeGUID = "totem_" .. GetTime()
+						timestamp[fakeGUID] = { timeStamp = GetTime() }
+						ShowPulse(totem, timestamp[fakeGUID])
+					end
+				else
+					-- If certain totem is disabled, then hide it and the plate depending on setting.
+					if ( totem.active ) then
+						TotemPlates:ToggleTotem(totem)
+					end
+
+					TotemPlates:ToggleAddon(nameplate, not Gladdy.db.npTotemsHideDisabledTotems)
 				end
 			end
 		end
@@ -803,31 +806,54 @@ function TotemPlates:GetAddonFrame(nameplate)
 end
 
 function TotemPlates:ToggleAddon(nameplate, show)
-	-- Universal overlay approach: we don't manipulate other addon's frames
-	-- We simply hide default nameplate elements for cleaner display
+	-- Hide/show the underlying nameplate elements when Gladdy takes over
 	local totem = nameplate.gladdyTotemFrame
 	if not totem then return end
 	
-	-- Try to hide/show standard nameplate elements if they exist
-	-- These are stored during CreateTotemFrame
 	if show then
-		-- Show underlying nameplate elements (restore normal view)
-		if totem.healthbar then pcall(function() totem.healthbar:Show() end) end
-		if totem.healthborder then pcall(function() totem.healthborder:Show() end) end
-		if totem.highlighttexture then pcall(function() totem.highlighttexture:SetAlpha(1) end) end
-		if totem.raidicon then pcall(function() totem.raidicon:SetAlpha(1) end) end
-		if totem.nametext then pcall(function() totem.nametext:Show() end) end
-		if totem.leveltext then pcall(function() totem.leveltext:Show() end) end
+		-- Restore visibility of underlying nameplate
+		for i = 1, nameplate:GetNumRegions() do
+			local region = select(i, nameplate:GetRegions())
+			if region then
+				pcall(function() 
+					region:SetAlpha(1)
+					if region.Show then region:Show() end
+				end)
+			end
+		end
+		for i = 1, nameplate:GetNumChildren() do
+			local child = select(i, nameplate:GetChildren())
+			if child and child ~= totem then
+				pcall(function() 
+					child:SetAlpha(1)
+					if child.Show then child:Show() end
+				end)
+			end
+		end
 	else
-		-- Hide underlying nameplate elements for clean totem display
-		if totem.healthbar then pcall(function() totem.healthbar:Hide() end) end
-		if totem.healthborder then pcall(function() totem.healthborder:Hide() end) end
-		if totem.highlighttexture then pcall(function() totem.highlighttexture:SetAlpha(0) end) end
-		if totem.mobicon then pcall(function() totem.mobicon:Hide() end) end
-		if totem.bossicon then pcall(function() totem.bossicon:Hide() end) end
-		if totem.raidicon then pcall(function() totem.raidicon:SetAlpha(0) end) end
-		if totem.nametext then pcall(function() totem.nametext:Hide() end) end
-		if totem.leveltext then pcall(function() totem.leveltext:Hide() end) end
+		-- Hide all nameplate regions and children except our gladdyTotemFrame
+		for i = 1, nameplate:GetNumRegions() do
+			local region = select(i, nameplate:GetRegions())
+			if region then
+				pcall(function() 
+					region:SetAlpha(0)
+					if region.Hide then region:Hide() end
+				end)
+			end
+		end
+		for i = 1, nameplate:GetNumChildren() do
+			local child = select(i, nameplate:GetChildren())
+			if child and child ~= totem then
+				pcall(function() 
+					child:SetAlpha(0)
+					if child.Hide then child:Hide() end
+				end)
+			end
+		end
+		-- Explicitly hide nametext if we have it
+		if totem.nametext then
+			pcall(function() totem.nametext:Hide() end)
+		end
 	end
 end
 
