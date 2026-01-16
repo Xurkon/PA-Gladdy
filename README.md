@@ -1,6 +1,6 @@
 # Gladdy (Ascension Edition)
 
-![Version](https://img.shields.io/badge/version-v2.10.0--Ascension-blue.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-v2.11--Ascension-blue.svg?style=for-the-badge)
 ![Downloads](https://img.shields.io/github/downloads/Xurkon/PA-Gladdy/total?style=for-the-badge&color=e67e22)
 [![Documentation](https://img.shields.io/badge/Documentation-View%20Docs-58a6ff?style=for-the-badge)](https://xurkon.github.io/PA-Gladdy/)
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/Xurkon)
@@ -36,14 +36,11 @@ Track important enemy cooldowns directly on their frames.
 - **Trinkets**: PvP trinket status and cooldowns.
 - **Racials**: Racial ability cooldowns (WotF, etc.).
 - **Major CDs**: Offensive and defensive cooldown tracking.
-- **Custom Cooldowns**: Add any spell with spec filtering (v2.9+).
-- **Duration Overrides**: Customize cooldown durations per spell (v2.9+).
 
 ### 🛡️ Diminishing Returns
 Built-in DR tracker for all CC categories.
 - **Visualization**: Icons show current DR status (1/2, 1/4, Immune).
 - **Accuracy**: Timer resets automatically after 18s.
-- **Ascension Support**: 47+ custom Ascension CC spells tracked (v2.7+).
 
 ## 📥 Installation
 
@@ -62,6 +59,7 @@ Built-in DR tracker for all CC categories.
 
 - **Hutsh** - Initial backport for Ascension compatibility.
 - **Xurkon** - Main maintainer, optimizations, and critical bug fixes (v2.5+).
+- **Surm** - TotemPlates rewrite and TurboPlates integration.
 - **Original Authors** - XiconQoo, DnB_Junkee, Knall, Tsoukie.
 
 ## 📄 License

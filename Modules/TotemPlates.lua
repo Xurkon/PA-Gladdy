@@ -15,73 +15,6 @@ local NAMEPLATE_TARGET
 local activeNameplates = {}
 local timestamp = {}
 
-local function FindTotemData(nameplateText)
-	if not nameplateText then return nil end
-	
-	local exactMatch = totemNameTotemData[nameplateText]
-	if exactMatch then return exactMatch end
-	
-	local lowerText = nameplateText:lower()
-	if not lowerText:find("totem") then return nil end
-	
-	local totemAbbreviations = {
-		["tremor"] = {"t. totem", "tremor", "tr. totem", "trem"},
-		["grounding"] = {"g. totem", "grounding", "gr. totem", "gro", "ground"},
-		["earthbind"] = {"e. totem", "earthbind", "eb. totem", "earth", "eb"},
-		["windfury"] = {"w. totem", "windfury", "wf. totem", "wf"},
-		["mana spring"] = {"m. s. t", "mana spring", "ms. totem", "m.s.t", "mana spr"},
-		["mana tide"] = {"m. t. t", "mana tide", "mt. totem", "m.t.t"},
-		["healing stream"] = {"h. s. t", "healing stream", "hs. totem", "h.s.t"},
-		["searing"] = {"s. totem", "searing", "se. totem"},
-		["flametongue"] = {"f. t", "flametongue", "ft. totem", "f.t", "flame"},
-		["magma"] = {"ma. totem", "magma"},
-		["stoneclaw"] = {"sc. totem", "stoneclaw"},
-		["stoneskin"] = {"ss. totem", "stoneskin"},
-		["strength of earth"] = {"s. o. e", "strength", "soe"},
-		["wrath of air"] = {"w. a. t", "wrath of air", "woa", "w.a.t"},
-		["totem of wrath"] = {"t. o. w", "totem of wrath", "tow"},
-		["fire resistance"] = {"f. r. t", "fire res"},
-		["frost resistance"] = {"fr. r. t", "frost res"},
-		["nature resistance"] = {"n. r. t", "nature res"},
-		["disease cleansing"] = {"d. c. t", "disease"},
-		["fire nova"] = {"f. n. t", "fire nova", "fn"},
-	}
-	
-	for totemName, abbrevList in pairs(totemAbbreviations) do
-		for _, abbrev in ipairs(abbrevList) do
-			if lowerText:find(abbrev, 1, true) then
-				for fullName, data in pairs(totemNameTotemData) do
-					if fullName:lower():find(totemName, 1, true) then
-						return data
-					end
-				end
-			end
-		end
-	end
-	
-	return nil
-end
-
--- Helper function to find unit for a nameplate
-local function GetNameplateUnit(nameplate)
-	-- Try C_NamePlate API first
-	if C_NamePlate and C_NamePlate.GetNamePlates then
-		for _, np in pairs(C_NamePlate.GetNamePlates()) do
-			if np == nameplate then
-				-- Found match, now find the unit
-				for i = 1, 40 do
-					local unit = "nameplate" .. i
-					local unitPlate = C_NamePlate.GetNamePlateForUnit(unit)
-					if unitPlate == nameplate then
-						return unit
-					end
-				end
-			end
-		end
-	end
-	return nil
-end
-
 ---------------------------------------------------
 
 -- Pulse Timer Functions (from core.lua)
@@ -94,6 +27,83 @@ local function OnUpdateTimer(self)
     if self.pulseText then
         self.pulseText:SetText(string.format("%.1f", cycleTime))
     end
+end
+
+-- Duration Bar Update (for totems like Capacitor Totem)
+local function OnUpdateDurationBar(self)
+    local elapsed = GetTime() - self.durationStart
+    local remaining = self.durationTotal - elapsed
+    
+    if remaining <= 0 then
+        if self.durationBar then
+            self.durationBarBg:Hide()
+            self.durationBar:Hide()
+            self.durationText:Hide()
+        end
+        self:SetScript("OnUpdate", nil)
+        return
+    end
+    
+    local progress = remaining / self.durationTotal
+    if self.durationBar then
+        self.durationBar:SetWidth(Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor * progress)
+        self.durationText:SetText(string.format("%.1f", remaining))
+    end
+end
+
+local function HideDurationBar(totem)
+    if totem and totem.durationBar then
+        totem.durationBarBg:Hide()
+        totem.durationBar:Hide()
+        totem.durationText:Hide()
+        totem:SetScript("OnUpdate", nil)
+        totem.durationStart = nil
+        totem.durationTotal = nil
+    end
+end
+
+local function ShowDurationBar(totem, duration)
+    if not totem then return end
+    
+    -- Create duration bar elements if they don't exist
+    if not totem.durationBarBg then
+        local size = Gladdy.db.npTotemPlatesSize
+        local width = size * Gladdy.db.npTotemPlatesWidthFactor
+        local barHeight = 4
+        
+        -- Background
+        local bg = totem:CreateTexture(nil, "BACKGROUND")
+        bg:SetPoint("TOP", totem, "BOTTOM", 0, -2)
+        bg:SetSize(width, barHeight)
+        bg:SetColorTexture(0, 0, 0, 0.7)
+        totem.durationBarBg = bg
+        
+        -- Progress bar
+        local bar = totem:CreateTexture(nil, "ARTWORK")
+        bar:SetPoint("TOPLEFT", bg, "TOPLEFT", 0, 0)
+        bar:SetHeight(barHeight)
+        bar:SetColorTexture(0.9, 0.1, 0.9, 1)
+        totem.durationBar = bar
+        
+        -- Timer text
+        local text = totem:CreateFontString(nil, "OVERLAY")
+        text:SetFont("Fonts\\ARIALN.TTF", 8, "OUTLINE")
+        text:SetPoint("CENTER", bg, "CENTER", 0, 0)
+        text:SetTextColor(1, 1, 1)
+        totem.durationText = text
+    end
+    
+    local width = Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor
+    totem.durationBarBg:SetWidth(width)
+    totem.durationBar:SetWidth(width)
+    
+    totem.durationStart = GetTime()
+    totem.durationTotal = duration
+    totem.durationText:SetText(string.format("%.1f", duration))
+    totem.durationBarBg:Show()
+    totem.durationBar:Show()
+    totem.durationText:Show()
+    totem:SetScript("OnUpdate", OnUpdateDurationBar)
 end
 
 local function HidePulse(totem)
@@ -112,7 +122,7 @@ local function ShowPulse(totem, timestampData)
         totem.pulseText = totem:CreateFontString(nil, "OVERLAY")
         totem.pulseText:SetFont("Fonts\\ARIALN.TTF", 7, "OUTLINE")
         totem.pulseText:SetPoint("CENTER", totem, "CENTER", 0, -10)
-        totem.pulseText:SetTextColor(1, 1, 0) -- Yellow color for visibility
+        totem.pulseText:SetTextColor(1, 1, 0)
     end
 
     totem.timestamp = timestampData.timeStamp
@@ -135,6 +145,7 @@ local function CLEU(_, eventType, sourceGUID, _, _, destGUID)
             local nameplate = activeNameplates[destGUID]
             if nameplate.gladdyTotemFrame then
                 HidePulse(nameplate.gladdyTotemFrame)
+                HideDurationBar(nameplate.gladdyTotemFrame)
             end
             activeNameplates[destGUID] = nil
         end
@@ -200,6 +211,7 @@ local function HandleNameplateRemoved(unit)
     local nameplate = activeNameplates[guid]
     if nameplate and nameplate.gladdyTotemFrame then
         HidePulse(nameplate.gladdyTotemFrame)
+        HideDurationBar(nameplate.gladdyTotemFrame)
         activeNameplates[guid] = nil
     end
 end
@@ -352,64 +364,15 @@ function TotemPlates.OnEvent(self, event, ...)
 end
 
 function TotemPlates:Initialize()
-	local hasTurboplates = IsAddOnLoaded("Turboplates") or IsAddOnLoaded("TurboPlates")
-	
-	if hasTurboplates then
-		local saved = nil
-		
-		if Gladdy.dbi and Gladdy.dbi.global then
-			saved = Gladdy.dbi.global.totemPlatesChoice
-		end
-		if not saved and GladdyXZ and GladdyXZ.global then
-			saved = GladdyXZ.global.totemPlatesChoice
-		end
-		
-		if saved == "gladdy" then
-			if TurboPlatesDB then
-				TurboPlatesDB.totemDisplay = "disabled"
-			end
-		elseif saved == "turboplates" then
-			Gladdy.db.npTotems = false
-			return
-		elseif not saved then
-			StaticPopupDialogs["GLADDY_TOTEMPLATES_CHOICE"] = {
-				text = "Both Gladdy and Turboplates can display totem icons.\n\nWhich addon should handle totem nameplates?\n\n(Gladdy has click-to-target and pulse timers)",
-				button1 = "Gladdy",
-				button2 = "Turboplates",
-				OnAccept = function()
-					if Gladdy.dbi and Gladdy.dbi.global then
-						Gladdy.dbi.global.totemPlatesChoice = "gladdy"
-					end
-					if not GladdyXZ then GladdyXZ = {} end
-					if not GladdyXZ.global then GladdyXZ.global = {} end
-					GladdyXZ.global.totemPlatesChoice = "gladdy"
-					
-					if TurboPlatesDB then
-						TurboPlatesDB.totemDisplay = "disabled"
-					end
-					Gladdy:Print("TotemPlates: Using Gladdy (Turboplates totem icons disabled)")
-					ReloadUI()
-				end,
-				OnCancel = function()
-					if Gladdy.dbi and Gladdy.dbi.global then
-						Gladdy.dbi.global.totemPlatesChoice = "turboplates"
-					end
-					if not GladdyXZ then GladdyXZ = {} end
-					if not GladdyXZ.global then GladdyXZ.global = {} end
-					GladdyXZ.global.totemPlatesChoice = "turboplates"
-					
-					Gladdy.db.npTotems = false
-					Gladdy:Print("TotemPlates: Using Turboplates (Gladdy totem icons disabled)")
-					ReloadUI()
-				end,
-				timeout = 0,
-				whileDead = true,
-				hideOnEscape = false,
-				preferredIndex = 3,
-			}
-			C_Timer.After(2, function()
-				StaticPopup_Show("GLADDY_TOTEMPLATES_CHOICE")
-			end)
+	if ( IsAddOnLoaded("Kui_Nameplates") ) then
+		self.addon = "Kui_Nameplates"
+	elseif ( IsAddOnLoaded("TidyPlates") ) then
+		self.addon = "TidyPlates"
+	elseif ( IsAddOnLoaded("TurboPlates") ) then
+		self.addon = "TurboPlates"
+	elseif ( IsAddOnLoaded("ElvUI") ) then
+		local E = unpack(ElvUI)
+		if ( E.private.nameplates.enable ) then
 			return
 		end
 	end
@@ -420,34 +383,16 @@ function TotemPlates:Initialize()
 end
 
 local function NameplateScanValid(self)
-	if not self then return false end
-	
-	-- Skip named frames (usually UI elements, not nameplates)
-	if self:GetName() then return false end
-	
-	-- Method 1: Check for Blizzard nameplate border texture
-	local numRegions = self:GetNumRegions()
-	for i = 1, numRegions do
-		local region = select(i, self:GetRegions())
-		if region and region:GetObjectType() == "Texture" then
-			local texture = region:GetTexture()
-			if texture == "Interface\\Tooltips\\Nameplate-Border" then
-				return true
+	if ( self ) then
+		if ( TotemPlates.addon ) then
+			return TotemPlates:GetAddonFrame(self)
+		elseif ( not self:GetName() ) then
+			local _, obj = self:GetRegions()
+			if ( obj and obj:GetObjectType() == "Texture" ) then
+				return obj:GetTexture() == "Interface\\Tooltips\\Nameplate-Border"
 			end
 		end
 	end
-	
-	-- Method 2: Check for health bar child (common nameplate element)
-	local numChildren = self:GetNumChildren()
-	for i = 1, numChildren do
-		local child = select(i, self:GetChildren())
-		if child and child:GetObjectType() == "StatusBar" then
-			-- Found a status bar, likely a health bar - this is probably a nameplate
-			return true
-		end
-	end
-	
-	return false
 end
 
 local function NameplateScan(nameplate, ...)
@@ -485,8 +430,11 @@ local function PLAYER_TARGET_CHANGED_UPDATE(nameplate, ...)
 	if ( nameplate ) then
 		local totem = nameplate.gladdyTotemFrame
 
-		if ( totem and totem.active and totem.nametext ) then
-			TotemPlates:SetTotemAlpha(totem, totem.nametext:GetText())
+		if ( totem and totem.active ) then
+			local totemName = totem.activeName or (totem.nametext and totem.nametext:GetText())
+			if totemName then
+				TotemPlates:SetTotemAlpha(totem, totemName)
+			end
 		end
 
 		return PLAYER_TARGET_CHANGED_UPDATE(...)
@@ -496,68 +444,81 @@ end
 function TotemPlates:PLAYER_TARGET_CHANGED()
 	NAMEPLATE_TARGET = UnitName("target")
 
-	if ( NAMEPLATE_TARGET ) then
-		PLAYER_TARGET_CHANGED_UPDATE(WorldFrame:GetChildren())
-	end
+	-- Always update alphas (both when targeting and untargeting)
+	PLAYER_TARGET_CHANGED_UPDATE(WorldFrame:GetChildren())
 end
 
-function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
+function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 	if ( Gladdy.db.npTotems ) then
-		if ( not nameplate ) then
-			nameplate = self -- OnShow
+		local nameplate = nameplateOrUnit
+		
+		-- Handle different call contexts:
+		-- 1. From OnShow hook: nameplateOrUnit is the nameplate frame (self in hook context)
+		-- 2. From event via OnEvent: nameplateOrUnit is unit string like "nameplate1"
+		-- 3. Direct call: nameplateOrUnit is nameplate frame, unit may be passed
+		if ( type(nameplateOrUnit) == "string" ) then
+			-- Called from event - first arg is unit token
+			unit = nameplateOrUnit
+			nameplate = C_NamePlate.GetNamePlateForUnit(unit)
+		elseif ( not nameplateOrUnit ) then
+			nameplate = self -- OnShow hook context
 		end
+		
+		if ( not nameplate ) then return end
 
 		local totem = nameplate.gladdyTotemFrame
-		if not totem then return end
-		if not totem.nametext then return end
-		
-		local nameplateText = totem.nametext:GetText()
-		if not nameplateText then return end
-		
-		local totemDataMatch = FindTotemData(nameplateText)
+		if ( totem ) then
+			-- TurboPlates hides Blizzard elements, so use UnitName instead of nametext:GetText()
+			local nameplateText
+			if ( self.addon == "TurboPlates" ) then
+				-- Try unit token first, then fallback to stored token
+				if ( unit ) then
+					nameplateText = UnitName(unit)
+				elseif ( nameplate.namePlateUnitToken ) then
+					nameplateText = UnitName(nameplate.namePlateUnitToken)
+				end
+			end
+			-- Fallback to Blizzard nametext for non-TurboPlates addons
+			if ( not nameplateText and totem.nametext ) then
+				nameplateText = totem.nametext:GetText()
+			end
+			local totemData = totemNameTotemData[nameplateText]
 
-		if ( totemDataMatch ) then
-			if ( TotemPlates:NameplateTypeValid(totem) ) then
-				local totemInfo = Gladdy.db.npTotemColors["totem" .. totemDataMatch.id]
+			if ( totemData ) then
+				if ( TotemPlates:NameplateTypeValid(totem, unit) ) then
+					local totemInfo = Gladdy.db.npTotemColors["totem" .. totemData.id]
 
-				if ( totemInfo.enabled ) then
-					totem.totemIcon:SetTexture(totemDataMatch.texture)
-					totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
-					totem.totemName:SetText(totemInfo.customText or "")
+					if ( totemInfo.enabled ) then
+						totem.totemIcon:SetTexture(totemData.texture)
+						totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
+						totem.totemName:SetText(totemInfo.customText or "")
 
-					TotemPlates:ToggleTotem(totem, true)
-					TotemPlates:ToggleAddon(nameplate)
-					totem.active = totemDataMatch
+						TotemPlates:ToggleTotem(totem, true)
+						TotemPlates:ToggleAddon(nameplate)
+						totem.active = totemData
+						totem.activeName = nameplateText  -- Store name for TurboPlates compat
 
-					-- Hybrid click-to-target: secure button if possible, pass-through otherwise
-					if not InCombatLockdown() then
-						-- Outside combat: enable secure targeting on our button
-						local unit = GetNameplateUnit(nameplate)
-						if unit then
-							totem:SetAttribute("unit", unit)
-							totem:EnableMouse(true) -- Our button handles clicks
+						TotemPlates:SetTotemAlpha(totem, nameplateText)
+
+						-- Check if this is a tremor or cleansing totem and add pulse timer
+						if Gladdy.db.npTotemPulseTimer and (nameplateText == "Tremor Totem" or nameplateText == "Cleansing Totem") then
+							local fakeGUID = "totem_" .. GetTime()
+							timestamp[fakeGUID] = { timeStamp = GetTime() }
+							ShowPulse(totem, timestamp[fakeGUID])
+						end
+						
+						-- Check if this totem has a duration (like Capacitor Totem)
+						if Gladdy.db.npTotemPulseTimer and totemData.duration then
+							ShowDurationBar(totem, totemData.duration)
 						end
 					else
-						-- In combat: can't set attributes, so pass clicks to underlying nameplate
-						totem:EnableMouse(false) -- Let clicks pass through to nameplate
-					end
+						-- If certain totem is disabled, then hide it and the plate depending on setting.
+						if ( totem.active ) then
+							TotemPlates:ToggleTotem(totem)
+						end
 
-					TotemPlates:SetTotemAlpha(totem, nameplateText)
-
-					-- Check if this is a tremor or cleansing totem and add pulse timer
-					if Gladdy.db.npTotemPulseTimer and (nameplateText == "Tremor Totem" or nameplateText == "Cleansing Totem") then
-						-- Create a timestamp for the totem if it doesn't exist
-						local fakeGUID = "totem_" .. GetTime()
-						timestamp[fakeGUID] = { timeStamp = GetTime() }
-						ShowPulse(totem, timestamp[fakeGUID])
+						TotemPlates:ToggleAddon(nameplate, not Gladdy.db.npTotemsHideDisabledTotems)
 					end
-				else
-					-- If certain totem is disabled, then hide it and the plate depending on setting.
-					if ( totem.active ) then
-						TotemPlates:ToggleTotem(totem)
-					end
-
-					TotemPlates:ToggleAddon(nameplate, not Gladdy.db.npTotemsHideDisabledTotems)
 				end
 			end
 		end
@@ -575,15 +536,12 @@ function TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplate)
 		if ( totem.active ) then
 			TotemPlates:ToggleTotem(totem)
 			totem.active = nil
-			
-			-- Clear click-to-target unit (only outside combat to prevent taint)
-			if not InCombatLockdown() then
-				totem:SetAttribute("unit", nil)
-			end
+			totem.activeName = nil
 		end
 
-		-- Hide pulse timer if it exists
+		-- Hide pulse timer and duration bar if they exist
 		HidePulse(totem)
+		HideDurationBar(totem)
 
 		TotemPlates:ToggleAddon(nameplate, true)
 	end
@@ -611,7 +569,10 @@ local function SettingRefresh(nameplate, ...)
 		local totem = nameplate.gladdyTotemFrame
 
 		if ( totem ) then
-			if ( Gladdy.db.npTotems and TotemPlates:NameplateTypeValid(totem) ) then
+			-- For TurboPlates, skip SettingRefresh validation since we don't have unit token here
+			-- The actual validation happens in NAME_PLATE_UNIT_ADDED when event fires
+			local isValid = TotemPlates.addon == "TurboPlates" or TotemPlates:NameplateTypeValid(totem, nil)
+			if ( Gladdy.db.npTotems and isValid ) then
 				if ( nameplate:IsShown() ) then
 					TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 				end
@@ -672,20 +633,10 @@ end
 ---------------------------------------------------
 
 function TotemPlates:CreateTotemFrame(nameplate, test)
-	-- Use Button with SecureActionButtonTemplate for click-to-target functionality
-	local Frame = CreateFrame("Button", nil, WorldFrame, "SecureActionButtonTemplate")
+	local Frame = CreateFrame("Frame", nil, WorldFrame) -- Parent prevents parental alpha.
 	Frame:SetPoint("BOTTOM", nameplate, "TOP", 0, -25)
 	Frame:SetSize(Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor, Gladdy.db.npTotemPlatesSize)
 	Frame:Hide()
-	
-	-- Enable mouse interaction for clicking
-	Frame:EnableMouse(true)
-	Frame:RegisterForClicks("AnyUp")
-	
-	-- Set up secure targeting action (static, won't cause taint)
-	Frame:SetAttribute("type1", "target")
-	-- Unit will be set dynamically when totem is detected (outside combat only)
-	
 	nameplate.gladdyTotemFrame = Frame
 
 	-- Icon
@@ -717,48 +668,10 @@ function TotemPlates:CreateTotemFrame(nameplate, test)
 		Highlight:SetAlpha(0)
 		Frame.selectionHighlight = Highlight
 
-		-- Universal element discovery - find nameplate elements regardless of addon
-		-- Try to find healthbar from children
-		local numChildren = nameplate:GetNumChildren()
-		for i = 1, numChildren do
-			local child = select(i, nameplate:GetChildren())
-			if child and child:GetObjectType() == "StatusBar" and not Frame.healthbar then
-				Frame.healthbar = child
-			end
-		end
-		
-		-- Try to find text and icons from regions
-		local numRegions = nameplate:GetNumRegions()
-		for i = 1, numRegions do
-			local region = select(i, nameplate:GetRegions())
-			if region then
-				local objType = region:GetObjectType()
-				if objType == "Texture" then
-					local texture = region:GetTexture()
-					if texture then
-						if texture:find("Nameplate%-Border") then
-							Frame.healthborder = region
-						elseif texture:find("Highlight") then
-							Frame.highlighttexture = region
-						elseif texture:find("Skull") or texture:find("Boss") then
-							Frame.bossicon = region
-						elseif texture:find("Raid") then
-							Frame.raidicon = region
-						end
-					end
-				elseif objType == "FontString" then
-					local text = region:GetText()
-					if text then
-						-- First fontstring is usually the name, second might be level
-						if not Frame.nametext then
-							Frame.nametext = region
-						elseif not Frame.leveltext then
-							Frame.leveltext = region
-						end
-					end
-				end
-			end
-		end
+		-- References
+		local threatglow, castbar, castbarborder, castbarinterrupt, castbaricon -- Unused
+		Frame.healthbar, castbar = nameplate:GetChildren()
+		threatglow, Frame.healthborder, castborder, castinterrupt, casticon, Frame.highlighttexture, Frame.nametext, Frame.leveltext, Frame.bossicon, Frame.raidicon, Frame.mobicon = nameplate:GetRegions()
 
 		-- Hooks
 		nameplate:HookScript("OnHide", TotemPlates.NAME_PLATE_UNIT_REMOVED)
@@ -774,14 +687,21 @@ end
 
 ---------------------------------------------------
 
-function TotemPlates:NameplateTypeValid(self)
-	if ( self.healthbar ) then
-		local r, g = self.healthbar:GetStatusBarColor()
-		local friendly = (r == 0 and g > 0.9)
+function TotemPlates:NameplateTypeValid(totemFrame, unit)
+	local friendly
+	
+	-- TurboPlates: Blizzard healthbar is reparented, use UnitIsFriend instead
+	if ( self.addon == "TurboPlates" and unit ) then
+		friendly = UnitIsFriend("player", unit)
+	elseif ( totemFrame.healthbar ) then
+		local r, g = totemFrame.healthbar:GetStatusBarColor()
+		friendly = (r == 0 and g > 0.9)
+	else
+		return false
+	end
 
-		if ( (Gladdy.db.npTotemsShowFriendly and friendly) or (Gladdy.db.npTotemsShowEnemy and not friendly) ) then
-			return true
-		end
+	if ( (Gladdy.db.npTotemsShowFriendly and friendly) or (Gladdy.db.npTotemsShowEnemy and not friendly) ) then
+		return true
 	end
 end
 
@@ -800,68 +720,86 @@ function TotemPlates:ToggleTotem(totem, show)
 end
 
 function TotemPlates:GetAddonFrame(nameplate)
-	-- Universal approach: always return the gladdy totem frame
-	-- We overlay our frame on top of any nameplate addon
-	return nameplate.gladdyTotemFrame
+	if ( self.addon == "Kui_Nameplates" ) then
+		return nameplate.kui
+	elseif ( self.addon == "TidyPlates" ) then
+		return nameplate.extended
+	elseif ( self.addon == "TurboPlates" ) then
+		-- Return myPlate if exists, otherwise nil (liteContainer handled separately)
+		return nameplate.myPlate
+	else
+		return nameplate.gladdyTotemFrame
+	end
 end
 
 function TotemPlates:ToggleAddon(nameplate, show)
-	-- Hide/show the underlying nameplate elements when Gladdy takes over
-	local totem = nameplate.gladdyTotemFrame
-	if not totem then return end
-	
-	if show then
-		-- Restore visibility of underlying nameplate
-		for i = 1, nameplate:GetNumRegions() do
-			local region = select(i, nameplate:GetRegions())
-			if region then
-				pcall(function() 
-					region:SetAlpha(1)
-					if region.Show then region:Show() end
-				end)
-			end
-		end
-		for i = 1, nameplate:GetNumChildren() do
-			local child = select(i, nameplate:GetChildren())
-			if child and child ~= totem then
-				pcall(function() 
-					child:SetAlpha(1)
-					if child.Show then child:Show() end
-				end)
+	local addon = TotemPlates:GetAddonFrame(nameplate)
+
+	if ( self.addon ) then
+		if ( addon ) then
+			local isKui = self.addon == "Kui_Nameplates"
+			local isTurbo = self.addon == "TurboPlates"
+
+			if ( show ) then
+				addon.Show = nil
+
+				if ( isKui ) then
+					addon.currentAlpha = 1
+					addon.lastAlpha = 0
+					addon.DoShow = 1
+				elseif ( isTurbo ) then
+					-- TurboPlates: Don't show here - plate is being removed.
+					-- If plate reappears for non-totem, FullPlateUpdate will show it.
+				else
+					addon:Show()
+				end
+			else
+				if ( isKui ) then
+					addon.currentAlpha = 1
+					addon.lastAlpha = 1
+					addon.DoShow = nil
+				elseif ( isTurbo ) then
+					-- TurboPlates: hide myPlate if it exists
+					if addon then addon:Hide() end
+					-- Also hide liteContainer (name-only mode)
+					if nameplate.liteContainer then nameplate.liteContainer:Hide() end
+				end
+
+				if ( not isTurbo ) then
+					addon:Hide()
+					addon.Show = TotemPlates.void
+				end
 			end
 		end
 	else
-		-- Hide all nameplate regions and children except our gladdyTotemFrame
-		for i = 1, nameplate:GetNumRegions() do
-			local region = select(i, nameplate:GetRegions())
-			if region then
-				pcall(function() 
-					region:SetAlpha(0)
-					if region.Hide then region:Hide() end
-				end)
-			end
-		end
-		for i = 1, nameplate:GetNumChildren() do
-			local child = select(i, nameplate:GetChildren())
-			if child and child ~= totem then
-				pcall(function() 
-					child:SetAlpha(0)
-					if child.Hide then child:Hide() end
-				end)
-			end
-		end
-		-- Explicitly hide nametext if we have it
-		if totem.nametext then
-			pcall(function() totem.nametext:Hide() end)
+		if ( show ) then
+			addon.healthbar:Show()
+			addon.healthborder:Show()
+			addon.highlighttexture:SetAlpha(1)
+			addon.raidicon:SetAlpha(1)
+			addon.nametext:Show()
+			addon.leveltext:Show()
+		else
+			addon.healthbar:Hide()
+			addon.healthborder:Hide()
+			addon.highlighttexture:SetAlpha(0)
+			addon.mobicon:Hide()
+			addon.bossicon:Hide()
+			addon.raidicon:SetAlpha(0)
+			addon.nametext:Hide()
+			addon.leveltext:Hide()
 		end
 	end
 end
 
 function TotemPlates.OnUpdate(self, elapsed)
-	if not self.nametext then return end
-	local nameplateName = self.nametext:GetText()
+	-- TurboPlates hides vanilla nametext, use stored totem name instead
+	local nameplateName = self.activeName
+	if not nameplateName and self.nametext then
+		nameplateName = self.nametext:GetText()
+	end
 
-	if ( self.active and (nameplateName == NAMEPLATE_TARGET or UnitName("mouseover") == nameplateName or not NAMEPLATE_TARGET) ) then
+	if ( self.active and nameplateName and (nameplateName == NAMEPLATE_TARGET or UnitName("mouseover") == nameplateName or not NAMEPLATE_TARGET) ) then
 		self.selectionHighlight:SetAlpha(.25)
 	else
 		self.selectionHighlight:SetAlpha(0)
@@ -908,10 +846,9 @@ function TotemPlates:TestOnce()
 
 			local totem = test.gladdyTotemFrame
 			totem:SetParent(test)
-			totem:ClearAllPoints()
-			totem:SetPoint("CENTER", test, "CENTER", 0, 0)
 			totem.totemIcon:SetTexture(totemData["tremor totem"].texture)
 			totem.totemName:SetText("Gladdy: Totem Plates")
+			totem:Show()
 		end
 
 		local totem = test.gladdyTotemFrame
@@ -922,8 +859,6 @@ function TotemPlates:TestOnce()
 		totem.totemName:SetPoint("TOP", totem, "BOTTOM", Gladdy.db.npTremorFontXOffset, Gladdy.db.npTremorFontYOffset)
 		totem.totemBorder:SetTexture(Gladdy.db.npTotemPlatesBorderStyle)
 		totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
-		totem:SetAlpha(1) -- Ensure full visibility for test mode
-		totem:Show()
 
 		test:Show()
 	elseif ( test ) then
