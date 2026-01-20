@@ -42,6 +42,7 @@ end
 
 Gladdy.defaults = {
     profile = {
+        firstRun = true,
         locked = false,
         hideBlizzard = "arena",
         x = 0,

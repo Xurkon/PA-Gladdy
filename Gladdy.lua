@@ -412,7 +412,14 @@ function Gladdy:OnEnable()
 		ClickCastFrames[self.buttons.arena5.secure] = true
 	end
 
-	if (not self.db.locked and self.db.x == 0 and self.db.y == 0) then
+	-- Migration: If firstRun is default (true) but user has moved/locked frame, assume existing user
+	if self.db.firstRun then
+		if (self.db.locked or self.db.x ~= 0 or self.db.y ~= 0) then
+			self.db.firstRun = false
+		end
+	end
+
+	if self.db.firstRun then
 		self:Print(L["Welcome to Gladdy!"])
 		self:Print(L["First run has been detected, displaying test frame."])
 		self:Print(L["Valid slash commands are:"])
@@ -420,11 +427,12 @@ function Gladdy:OnEnable()
 		self:Print(L["/gladdy test2-5"])
 		self:Print(L["/gladdy hide"])
 		self:Print(L["/gladdy reset"])
-		self:Print(L["If this is not your first run please lock or move the frame to prevent this from happening."])
 
 		self:HideFrame()
 		self:ToggleFrame(3)
 		self.showConfig = true
+		
+		self.db.firstRun = false
 	end
 end
 
