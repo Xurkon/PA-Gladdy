@@ -7,6 +7,12 @@ This changelog documents the complete history of changes, hotfixes, and optimiza
 
 ---
 
+## v2.12-Ascension (Release)
+- **Settings Persistence Fix**: Resolved "First Run" reuse issue. Gladdy now uses an internal `firstRun` flag instead of checking frame position, ensuring the welcome frame only appears once per install, even if the game crashes later.
+- **Migration**: Existing users are automatically migrated to the new system.
+
+---
+
 ## v2.11-Ascension (Release)
 - **TotemPlates Rewrite**: Complete rewrite of TotemPlates module by Surm.
 - **TurboPlates Integration**: Native integration with TurboPlates nameplate addon for seamless totem tracking.
