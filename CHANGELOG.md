@@ -1,11 +1,15 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.11-Ascension
+**Current Version:** v2.13-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes), Surm (TotemPlates & TurboPlates Integration)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
 
 ---
+
+## v2.13-Ascension (Release)
+- **TotemPlates Enhancements**: Improved totem detection and display logic.
+- **Fixes**: General enhancements and bug fixes for TotemPlates module.
 
 ## v2.12-Ascension (Release)
 - **Settings Persistence Fix**: Resolved "First Run" reuse issue. Gladdy now uses an internal `firstRun` flag instead of checking frame position, ensuring the welcome frame only appears once per install, even if the game crashes later.
