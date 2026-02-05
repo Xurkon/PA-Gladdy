@@ -1,4 +1,5 @@
-local select, pairs, tremove, tinsert, format, strsplit, tonumber, ipairs = select, pairs, tremove, tinsert, format, strsplit, tonumber, ipairs
+local select, pairs, tremove, tinsert, format, strsplit, tonumber, ipairs = select, pairs, tremove, tinsert, format,
+	strsplit, tonumber, ipairs
 local Gladdy = LibStub("Gladdy")
 local L = Gladdy.L
 local TotemPlates
@@ -19,8 +20,8 @@ local function HideBlizzardElements(nameplate)
 	end
 
 	-- 1. Handle Regions and Children
-	local blizzElements = {nameplate:GetRegions()}
-	local children = {nameplate:GetChildren()}
+	local blizzElements = { nameplate:GetRegions() }
+	local children = { nameplate:GetChildren() }
 	for _, child in ipairs(children) do
 		-- Don't hide our own frame or other essential frames
 		if child ~= nameplate.gladdyTotemFrame and child ~= nameplate.liteContainer then
@@ -37,7 +38,7 @@ local function HideBlizzardElements(nameplate)
 				alpha = child:GetAlpha(),
 				shown = child:IsShown(),
 			}
-			
+
 			-- Capture Texture/Color info (if applicable)
 			if child.GetTexture then
 				state.texture = child:GetTexture()
@@ -54,7 +55,7 @@ local function HideBlizzardElements(nameplate)
 					end
 				end
 			end
-			
+
 			tinsert(nameplate._originalStates, state)
 
 			-- Aggressive Hide
@@ -64,7 +65,7 @@ local function HideBlizzardElements(nameplate)
 			end
 			child:SetAlpha(0)
 			child:Hide()
-			
+
 			-- Nuke visual content
 			if child.SetTexture then
 				child:SetTexture(nil) -- Clear it visually (nil is safer than "")
@@ -84,27 +85,27 @@ local function HideBlizzardElements(nameplate)
 	-- Unconditionally try to clear backdrop to fix "White/Black Box"
 	if nameplate.SetBackdrop then
 		local backdrop = nameplate.GetBackdrop and nameplate:GetBackdrop()
-		
+
 		-- Always save whatever we can find, or just save the fact we're clearing it
 		nameplate._originalBackdrop = backdrop
-		
+
 		if nameplate.GetBackdropColor then
-			nameplate._originalBackdropColor = {nameplate:GetBackdropColor()}
+			nameplate._originalBackdropColor = { nameplate:GetBackdropColor() }
 		end
 		if nameplate.GetBackdropBorderColor then
-			nameplate._originalBackdropBorderColor = {nameplate:GetBackdropBorderColor()}
+			nameplate._originalBackdropBorderColor = { nameplate:GetBackdropBorderColor() }
 		end
-			
+
 		nameplate:SetBackdrop(nil)
 	end
-	
+
 	-- ElvUI specific frames (Recursion)
 	local framesToHide = {}
 	if nameplate.backdrop then tinsert(framesToHide, nameplate.backdrop) end
 	if nameplate.UnitFrame then tinsert(framesToHide, nameplate.UnitFrame) end
 	-- ElvUI sometimes puts things on 'Health'
 	if nameplate.healthBar then tinsert(framesToHide, nameplate.healthBar) end -- Sometimes a frame, sometimes a texture?
-	
+
 	for _, frame in ipairs(framesToHide) do
 		local state = {
 			obj = frame,
@@ -114,12 +115,12 @@ local function HideBlizzardElements(nameplate)
 		}
 		if frame.GetBackdrop then
 			state.backdrop = frame:GetBackdrop()
-			if frame.GetBackdropColor then state.bdColor = {frame:GetBackdropColor()} end
-			if frame.GetBackdropBorderColor then state.bdBorderColor = {frame:GetBackdropBorderColor()} end
+			if frame.GetBackdropColor then state.bdColor = { frame:GetBackdropColor() } end
+			if frame.GetBackdropBorderColor then state.bdBorderColor = { frame:GetBackdropBorderColor() } end
 		end
-		
+
 		tinsert(nameplate._originalStates, state)
-		
+
 		-- Ensure parent is valid before hiding
 		if frame:GetParent() ~= hiddenFrame then
 			frame:SetParent(hiddenFrame)
@@ -128,14 +129,14 @@ local function HideBlizzardElements(nameplate)
 		frame:Hide()
 		if frame.SetBackdrop then frame:SetBackdrop(nil) end
 	end
-	
+
 	nameplate._gladdyBlizzHidden = true
 end
 
 -- Restore Blizzard elements when nameplate is no longer a totem (recycled)
 local function RestoreBlizzardElements(nameplate)
 	if not nameplate._gladdyBlizzHidden then return end
-	
+
 	-- 1. Restore Regions/Children
 	if nameplate._originalStates then
 		for _, state in ipairs(nameplate._originalStates) do
@@ -154,7 +155,7 @@ local function RestoreBlizzardElements(nameplate)
 				elseif state.r and child.GetStatusBarTexture and child:GetStatusBarTexture() and child:GetStatusBarTexture().SetVertexColor then
 					child:GetStatusBarTexture():SetVertexColor(state.r, state.g, state.b, state.a)
 				end
-				
+
 				-- Restore Backdrop (for ElvUI sub-frames)
 				if state.backdrop and child.SetBackdrop then
 					child:SetBackdrop(state.backdrop)
@@ -178,10 +179,10 @@ local function RestoreBlizzardElements(nameplate)
 		end
 		wipe(nameplate._originalStates)
 	end
-	
+
 	-- 2. Restore Main Nameplate Backdrop
 	if nameplate.SetBackdrop then
-		-- Use pcall for safety if _originalBackdrop was nil but SetBackdrop expects table? 
+		-- Use pcall for safety if _originalBackdrop was nil but SetBackdrop expects table?
 		-- Usually SetBackdrop(nil) is valid, SetBackdrop(table) is valid.
 		if nameplate._originalBackdrop then
 			nameplate:SetBackdrop(nameplate._originalBackdrop)
@@ -197,13 +198,13 @@ local function RestoreBlizzardElements(nameplate)
 		end
 		nameplate._originalBackdrop = nil
 	end
-	
+
 	nameplate._gladdyBlizzHidden = nil
 end
 local UnitName, GetSpellInfo, CreateFrame, WorldFrame = UnitName, GetSpellInfo, CreateFrame, WorldFrame
 local totemData, totemNameTotemData = Gladdy:GetTotemData()
 
-local NAMEPLATE_LOGIN = -.4 -- Delay processing all nameplates on initial load.
+local NAMEPLATE_LOGIN = -.4   -- Delay processing all nameplates on initial load.
 local NAMEPLATE_THROTTLE = .5 -- .04 = instant
 local NAMEPLATE_THROTTLE_CURRENT = NAMEPLATE_LOGIN
 local NAMEPLATE_NUM = 0
@@ -221,201 +222,201 @@ local timestamp = {}
 ---------------------------------------------------
 
 local function OnUpdateTimer(self)
-    if not self.active or not self.active.pulse then return end
-    local pulseRate = type(self.active.pulse) == "number" and self.active.pulse or 3
-    local remainingTime = self.timestamp - GetTime()
-    local cycleTime = remainingTime % pulseRate
-    if self.pulseText then
-        self.pulseText:SetText(string.format("%.1f", cycleTime))
-    end
+	if not self.active or not self.active.pulse then return end
+	local pulseRate = type(self.active.pulse) == "number" and self.active.pulse or 3
+	local remainingTime = self.timestamp - GetTime()
+	local cycleTime = remainingTime % pulseRate
+	if self.pulseText then
+		self.pulseText:SetText(string.format("%.1f", cycleTime))
+	end
 end
 
 -- Duration Bar Update (for totems like Capacitor Totem)
 local function OnUpdateDurationBar(self)
-    local elapsed = GetTime() - self.durationStart
-    local remaining = self.durationTotal - elapsed
-    
-    if remaining <= 0 then
-        if self.durationBar then
-            self.durationBarBg:Hide()
-            self.durationBar:Hide()
-            self.durationText:Hide()
-        end
-        self:SetScript("OnUpdate", nil)
-        return
-    end
-    
-    local progress = remaining / self.durationTotal
-    if self.durationBar then
-        self.durationBar:SetWidth(Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor * progress)
-        self.durationText:SetText(string.format("%.1f", remaining))
-    end
+	local elapsed = GetTime() - self.durationStart
+	local remaining = self.durationTotal - elapsed
+
+	if remaining <= 0 then
+		if self.durationBar then
+			self.durationBarBg:Hide()
+			self.durationBar:Hide()
+			self.durationText:Hide()
+		end
+		self:SetScript("OnUpdate", nil)
+		return
+	end
+
+	local progress = remaining / self.durationTotal
+	if self.durationBar then
+		self.durationBar:SetWidth(Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor * progress)
+		self.durationText:SetText(string.format("%.1f", remaining))
+	end
 end
 
 local function HideDurationBar(totem)
-    if totem and totem.durationBar then
-        totem.durationBarBg:Hide()
-        totem.durationBar:Hide()
-        totem.durationText:Hide()
-        totem:SetScript("OnUpdate", nil)
-        totem.durationStart = nil
-        totem.durationTotal = nil
-    end
+	if totem and totem.durationBar then
+		totem.durationBarBg:Hide()
+		totem.durationBar:Hide()
+		totem.durationText:Hide()
+		totem:SetScript("OnUpdate", nil)
+		totem.durationStart = nil
+		totem.durationTotal = nil
+	end
 end
 
 local function ShowDurationBar(totem, duration)
-    if not totem then return end
-    
-    -- Create duration bar elements if they don't exist
-    if not totem.durationBarBg then
-        local size = Gladdy.db.npTotemPlatesSize
-        local width = size * Gladdy.db.npTotemPlatesWidthFactor
-        local barHeight = 4
-        
-        -- Background
-        local bg = totem:CreateTexture(nil, "BACKGROUND")
-        bg:SetPoint("TOP", totem, "BOTTOM", 0, -2)
-        bg:SetSize(width, barHeight)
-        bg:SetColorTexture(0, 0, 0, 0.7)
-        totem.durationBarBg = bg
-        
-        -- Progress bar
-        local bar = totem:CreateTexture(nil, "ARTWORK")
-        bar:SetPoint("TOPLEFT", bg, "TOPLEFT", 0, 0)
-        bar:SetHeight(barHeight)
-        bar:SetColorTexture(0.9, 0.1, 0.9, 1)
-        totem.durationBar = bar
-        
-        -- Timer text
-        local text = totem:CreateFontString(nil, "OVERLAY")
-        text:SetFont("Fonts\\ARIALN.TTF", 8, "OUTLINE")
-        text:SetPoint("CENTER", bg, "CENTER", 0, 0)
-        text:SetTextColor(1, 1, 1)
-        totem.durationText = text
-    end
-    
-    local width = Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor
-    totem.durationBarBg:SetWidth(width)
-    totem.durationBar:SetWidth(width)
-    
-    totem.durationStart = GetTime()
-    totem.durationTotal = duration
-    totem.durationText:SetText(string.format("%.1f", duration))
-    totem.durationBarBg:Show()
-    totem.durationBar:Show()
-    totem.durationText:Show()
-    totem:SetScript("OnUpdate", OnUpdateDurationBar)
+	if not totem then return end
+
+	-- Create duration bar elements if they don't exist
+	if not totem.durationBarBg then
+		local size = Gladdy.db.npTotemPlatesSize
+		local width = size * Gladdy.db.npTotemPlatesWidthFactor
+		local barHeight = 4
+
+		-- Background
+		local bg = totem:CreateTexture(nil, "BACKGROUND")
+		bg:SetPoint("TOP", totem, "BOTTOM", 0, -2)
+		bg:SetSize(width, barHeight)
+		bg:SetColorTexture(0, 0, 0, 0.7)
+		totem.durationBarBg = bg
+
+		-- Progress bar
+		local bar = totem:CreateTexture(nil, "ARTWORK")
+		bar:SetPoint("TOPLEFT", bg, "TOPLEFT", 0, 0)
+		bar:SetHeight(barHeight)
+		bar:SetColorTexture(0.9, 0.1, 0.9, 1)
+		totem.durationBar = bar
+
+		-- Timer text
+		local text = totem:CreateFontString(nil, "OVERLAY")
+		text:SetFont("Fonts\\ARIALN.TTF", 8, "OUTLINE")
+		text:SetPoint("CENTER", bg, "CENTER", 0, 0)
+		text:SetTextColor(1, 1, 1)
+		totem.durationText = text
+	end
+
+	local width = Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor
+	totem.durationBarBg:SetWidth(width)
+	totem.durationBar:SetWidth(width)
+
+	totem.durationStart = GetTime()
+	totem.durationTotal = duration
+	totem.durationText:SetText(string.format("%.1f", duration))
+	totem.durationBarBg:Show()
+	totem.durationBar:Show()
+	totem.durationText:Show()
+	totem:SetScript("OnUpdate", OnUpdateDurationBar)
 end
 
 local function HidePulse(totem)
-    if totem and totem.pulseText then
-        totem.pulseText:Hide()
-        totem:SetScript("OnUpdate", nil)
-        totem.timestamp = nil
-    end
+	if totem and totem.pulseText then
+		totem.pulseText:Hide()
+		totem:SetScript("OnUpdate", nil)
+		totem.timestamp = nil
+	end
 end
 
 local function ShowPulse(totem, timestampData)
-    if not totem then return end
+	if not totem then return end
 
-    -- Create pulse text if it doesn't exist
-    if not totem.pulseText then
-        totem.pulseText = totem:CreateFontString(nil, "OVERLAY")
-        totem.pulseText:SetFont("Fonts\\ARIALN.TTF", 7, "OUTLINE")
-        totem.pulseText:SetPoint("CENTER", totem, "CENTER", 0, -10)
-        totem.pulseText:SetTextColor(1, 1, 0)
-    end
+	-- Create pulse text if it doesn't exist
+	if not totem.pulseText then
+		totem.pulseText = totem:CreateFontString(nil, "OVERLAY")
+		totem.pulseText:SetFont("Fonts\\ARIALN.TTF", 7, "OUTLINE")
+		totem.pulseText:SetPoint("CENTER", totem, "CENTER", 0, -10)
+		totem.pulseText:SetTextColor(1, 1, 0)
+	end
 
-    totem.timestamp = timestampData.timeStamp
-    local pulseRate = (totem.active and type(totem.active.pulse) == "number") and totem.active.pulse or 3
-    local cycleTime = (timestampData.timeStamp - GetTime()) % pulseRate
-    totem.pulseText:SetText(string.format("%.1f", cycleTime))
-    totem.pulseText:Show()
-    totem:SetScript("OnUpdate", OnUpdateTimer)
+	totem.timestamp = timestampData.timeStamp
+	local pulseRate = (totem.active and type(totem.active.pulse) == "number") and totem.active.pulse or 3
+	local cycleTime = (timestampData.timeStamp - GetTime()) % pulseRate
+	totem.pulseText:SetText(string.format("%.1f", cycleTime))
+	totem.pulseText:Show()
+	totem:SetScript("OnUpdate", OnUpdateTimer)
 end
 
 local function CLEU(_, eventType, sourceGUID, _, _, destGUID)
-    local guid = destGUID and tonumber((destGUID):sub(-10, -7), 16)
+	local guid = destGUID and tonumber((destGUID):sub(-10, -7), 16)
 
-    -- Check if this is a pulse totem
-    if not guid or not TotemPlates.pulseTotems[guid] then return end
+	-- Check if this is a pulse totem
+	if not guid or not TotemPlates.pulseTotems[guid] then return end
 
-    if (eventType == "UNIT_DESTROYED" or eventType == "SWING_DAMAGE" or eventType == "SPELL_DAMAGE") and timestamp[destGUID] then
-        timestamp[destGUID] = nil
-        -- Remove from active nameplates if destroyed
-        if activeNameplates[destGUID] then
-            local nameplate = activeNameplates[destGUID]
-            if nameplate.gladdyTotemFrame then
-                HidePulse(nameplate.gladdyTotemFrame)
-                HideDurationBar(nameplate.gladdyTotemFrame)
-            end
-            activeNameplates[destGUID] = nil
-        end
-    elseif eventType == "SPELL_CAST_SUCCESS" then
-        timestamp[sourceGUID] = { timeStamp = GetTime() }
-    elseif eventType == "SPELL_SUMMON" then
-        if timestamp[sourceGUID] then
-            timestamp[destGUID] = timestamp[sourceGUID]
-            timestamp[sourceGUID] = nil
-        else
-            timestamp[destGUID] = { timeStamp = GetTime() }
-        end
-        
-        -- Check if we already have a nameplate for this GUID
-        if activeNameplates[destGUID] and timestamp[destGUID] then
-            local nameplate = activeNameplates[destGUID]
-            if nameplate.gladdyTotemFrame then
-                ShowPulse(nameplate.gladdyTotemFrame, timestamp[destGUID])
-            end
-        end
-    end
+	if (eventType == "UNIT_DESTROYED" or eventType == "SWING_DAMAGE" or eventType == "SPELL_DAMAGE") and timestamp[destGUID] then
+		timestamp[destGUID] = nil
+		-- Remove from active nameplates if destroyed
+		if activeNameplates[destGUID] then
+			local nameplate = activeNameplates[destGUID]
+			if nameplate.gladdyTotemFrame then
+				HidePulse(nameplate.gladdyTotemFrame)
+				HideDurationBar(nameplate.gladdyTotemFrame)
+			end
+			activeNameplates[destGUID] = nil
+		end
+	elseif eventType == "SPELL_CAST_SUCCESS" then
+		timestamp[sourceGUID] = { timeStamp = GetTime() }
+	elseif eventType == "SPELL_SUMMON" then
+		if timestamp[sourceGUID] then
+			timestamp[destGUID] = timestamp[sourceGUID]
+			timestamp[sourceGUID] = nil
+		else
+			timestamp[destGUID] = { timeStamp = GetTime() }
+		end
+
+		-- Check if we already have a nameplate for this GUID
+		if activeNameplates[destGUID] and timestamp[destGUID] then
+			local nameplate = activeNameplates[destGUID]
+			if nameplate.gladdyTotemFrame then
+				ShowPulse(nameplate.gladdyTotemFrame, timestamp[destGUID])
+			end
+		end
+	end
 end
 
 -- Function to handle NAME_PLATE_UNIT_ADDED event
 local function HandleNameplateAdded(unit)
-    if not Gladdy.db.npTotemPulseTimer then return end
-    
-    local guid = UnitGUID(unit)
-    if not guid then return end
-    
-    local creatureID = tonumber((guid):sub(-10, -7), 16)
-    if not TotemPlates.pulseTotems[creatureID] then return end -- Not a pulse totem
-    
-    local nameplate = C_NamePlate.GetNamePlateForUnit(unit)
-    if not nameplate then return end
-    
-    activeNameplates[guid] = nameplate
-    
-    -- If we have timestamp data for this GUID, show the pulse timer
-    if timestamp[guid] then
-        -- Wait a bit for the gladdy totem frame to be created
-        C_Timer.After(0.1, function()
-            if nameplate.gladdyTotemFrame then
-                ShowPulse(nameplate.gladdyTotemFrame, timestamp[guid])
-            end
-        end)
-    else
-        -- Create timestamp for existing totem
-        timestamp[guid] = { timeStamp = GetTime() }
-        C_Timer.After(0.1, function()
-            if nameplate.gladdyTotemFrame then
-                ShowPulse(nameplate.gladdyTotemFrame, timestamp[guid])
-            end
-        end)
-    end
+	if not Gladdy.db.npTotemPulseTimer then return end
+
+	local guid = UnitGUID(unit)
+	if not guid then return end
+
+	local creatureID = tonumber((guid):sub(-10, -7), 16)
+	if not TotemPlates.pulseTotems[creatureID] then return end -- Not a pulse totem
+
+	local nameplate = C_NamePlate.GetNamePlateForUnit(unit)
+	if not nameplate then return end
+
+	activeNameplates[guid] = nameplate
+
+	-- If we have timestamp data for this GUID, show the pulse timer
+	if timestamp[guid] then
+		-- Wait a bit for the gladdy totem frame to be created
+		C_Timer.After(0.1, function()
+			if nameplate.gladdyTotemFrame then
+				ShowPulse(nameplate.gladdyTotemFrame, timestamp[guid])
+			end
+		end)
+	else
+		-- Create timestamp for existing totem
+		timestamp[guid] = { timeStamp = GetTime() }
+		C_Timer.After(0.1, function()
+			if nameplate.gladdyTotemFrame then
+				ShowPulse(nameplate.gladdyTotemFrame, timestamp[guid])
+			end
+		end)
+	end
 end
 
 -- Function to handle NAME_PLATE_UNIT_REMOVED event
 local function HandleNameplateRemoved(unit)
-    local guid = UnitGUID(unit)
-    if not guid then return end
-    
-    local nameplate = activeNameplates[guid]
-    if nameplate and nameplate.gladdyTotemFrame then
-        HidePulse(nameplate.gladdyTotemFrame)
-        HideDurationBar(nameplate.gladdyTotemFrame)
-        activeNameplates[guid] = nil
-    end
+	local guid = UnitGUID(unit)
+	if not guid then return end
+
+	local nameplate = activeNameplates[guid]
+	if nameplate and nameplate.gladdyTotemFrame then
+		HidePulse(nameplate.gladdyTotemFrame)
+		HideDurationBar(nameplate.gladdyTotemFrame)
+		activeNameplates[guid] = nil
+	end
 end
 
 ---------------------------------------------------
@@ -428,14 +429,15 @@ local function GetTotemColorDefaultOptions()
 	local defaultDB = {}
 	local options = {}
 	local indexedList = {}
-	for k,v in pairs(totemData) do
-		tinsert(indexedList, {name = k, id = v.id, color = v.color, texture = v.texture})
+	for k, v in pairs(totemData) do
+		tinsert(indexedList, { name = k, id = v.id, color = v.color, texture = v.texture })
 	end
-	table.sort(indexedList, function (a, b)
+	table.sort(indexedList, function(a, b)
 		return a.name < b.name
 	end)
-	for i=1,#indexedList do
-		defaultDB["totem" .. indexedList[i].id] = {color = indexedList[i].color, enabled = true, alpha = 0.6, customText = ""}
+	for i = 1, #indexedList do
+		defaultDB["totem" .. indexedList[i].id] = { color = indexedList[i].color, enabled = true, alpha = 0.6, customText =
+		"" }
 		options["npTotemsHideDisabledTotems"] = {
 			order = 1,
 			name = L["Hide Disabled Totem Plates"],
@@ -449,22 +451,25 @@ local function GetTotemColorDefaultOptions()
 			end
 		}
 		options["totem" .. indexedList[i].id] = {
-			order = i+1,
-			name = select(1, GetSpellInfo(indexedList[i].id)) or indexedList[i].name,
+			order = i + 1,
+			name  = select(1, GetSpellInfo(indexedList[i].id)) or indexedList[i].name,
 			--inline = true,
-			width  = "3.0",
-			type = "group",
-			icon = indexedList[i].texture,
-			args = {
+			width = "3.0",
+			type  = "group",
+			icon  = indexedList[i].texture,
+			args  = {
 				headerTotemConfig = {
 					type = "header",
-					name = format("|T%s:20|t %s", indexedList[i].texture or "Interface\\Icons\\Inv_misc_questionmark", select(1, GetSpellInfo(indexedList[i].id)) or indexedList[i].name),
+					name = format("|T%s:20|t %s", indexedList[i].texture or "Interface\\Icons\\Inv_misc_questionmark",
+						select(1, GetSpellInfo(indexedList[i].id)) or indexedList[i].name),
 					order = 1,
 				},
 				enabled = {
 					order = 2,
 					name = L["Enabled"],
-					desc = "Enable " .. format("|T%s:20|t %s", indexedList[i].texture or "Interface\\Icons\\Inv_misc_questionmark", select(1, GetSpellInfo(indexedList[i].id)) or indexedList[i].name),
+					desc = "Enable " ..
+					format("|T%s:20|t %s", indexedList[i].texture or "Interface\\Icons\\Inv_misc_questionmark",
+						select(1, GetSpellInfo(indexedList[i].id)) or indexedList[i].name),
 					type = "toggle",
 					width = "full",
 					get = function() return Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].enabled end,
@@ -482,9 +487,9 @@ local function GetTotemColorDefaultOptions()
 					width = "full",
 					get = function()
 						return Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].color.r,
-						Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].color.g,
-						Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].color.b,
-						Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].color.a
+							Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].color.g,
+							Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].color.b,
+							Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].color.a
 					end,
 					set = function(_, r, g, b, a)
 						Gladdy.dbi.profile.npTotemColors["totem" .. indexedList[i].id].color.r,
@@ -516,7 +521,10 @@ local function GetTotemColorDefaultOptions()
 					order = 5,
 					width = "full",
 					get = function() return Gladdy.db.npTotemColors["totem" .. indexedList[i].id].customText end,
-					set = function(_, value) Gladdy.db.npTotemColors["totem" .. indexedList[i].id].customText = value Gladdy:UpdateFrame() end
+					set = function(_, value)
+						Gladdy.db.npTotemColors["totem" .. indexedList[i].id].customText = value
+						Gladdy:UpdateFrame()
+					end
 				},
 			}
 		}
@@ -547,7 +555,7 @@ TotemPlates = Gladdy:NewModule("Totem Plates", 2, {
 
 function TotemPlates.OnEvent(self, event, ...)
 	local Func = TotemPlates[event]
-	if ( Func ) then
+	if (Func) then
 		Func(self, ...)
 	end
 end
@@ -566,21 +574,21 @@ function TotemPlates:Initialize()
 		end
 	end
 
-	if ( IsAddOnLoaded("Kui_Nameplates") ) then
+	if (IsAddOnLoaded("Kui_Nameplates")) then
 		self.addon = "Kui_Nameplates"
-	elseif ( IsAddOnLoaded("TidyPlates") ) then
+	elseif (IsAddOnLoaded("TidyPlates")) then
 		self.addon = "TidyPlates"
-	elseif ( IsAddOnLoaded("TurboPlates") ) then
+	elseif (IsAddOnLoaded("TurboPlates")) then
 		self.addon = "TurboPlates"
-	elseif ( IsAddOnLoaded("ElvUI") or _G.ElvUI ) then
+	elseif (IsAddOnLoaded("ElvUI") or _G.ElvUI) then
 		self.addon = "ElvUI"
 	end
 
-	TotemPlates.void = function()end
+	TotemPlates.void = function() end
 	self:SetScript("OnEvent", TotemPlates.OnEvent)
 	self:RegisterEvent("PLAYER_ENTERING_WORLD")
 	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED") -- Register CLEU for pulse timers
-	
+
 	-- Build Pulse Totem Lookup
 	self.pulseTotems = {}
 	for name, data in pairs(totemData) do
@@ -613,7 +621,7 @@ local function FindFontString(frame)
 		return frame
 	end
 	if frame.GetChildren then
-		local children = {frame:GetChildren()}
+		local children = { frame:GetChildren() }
 		for _, child in ipairs(children) do
 			local fs = FindFontString(child)
 			if fs then return fs end
@@ -622,24 +630,25 @@ local function FindFontString(frame)
 end
 
 local function NameplateScanValid(self)
-	if ( self and self.GetObjectType and self:GetObjectType() == "Frame" ) then
-		if ( TotemPlates.addon == "ElvUI" ) then
+	if (self and self.GetObjectType and self:GetObjectType() == "Frame") then
+		if (TotemPlates.addon == "ElvUI") then
 			return self.UnitFrame or self.healthBar or (self:GetName() and self:GetName():find("ElvNP"))
-		elseif ( TotemPlates.addon ) then
+		elseif (TotemPlates.addon) then
 			return TotemPlates:GetAddonFrame(self)
-		elseif ( not self:GetName() ) then
+		elseif (not self:GetName()) then
 			local _, obj = self:GetRegions()
-			if ( obj and obj.GetObjectType and obj:GetObjectType() == "Texture" ) then
+			if (obj and obj.GetObjectType and obj:GetObjectType() == "Texture") then
 				local tex = obj:GetTexture()
-				return tex == "Interface\\Tooltips\\Nameplate-Border" or tex == "Interface\\AddOns\\ElvUI\\media\\textures\\white8x8" or tex == "Interface\\Buttons\\WHITE8X8"
+				return tex == "Interface\\Tooltips\\Nameplate-Border" or
+				tex == "Interface\\AddOns\\ElvUI\\media\\textures\\white8x8" or tex == "Interface\\Buttons\\WHITE8X8"
 			end
 		end
 	end
 end
 
 local function NameplateScan(nameplate, ...)
-	if ( nameplate ) then
-		if ( (not nameplate.gladdyTotemFrame) and NameplateScanValid(nameplate) ) then
+	if (nameplate) then
+		if ((not nameplate.gladdyTotemFrame) and NameplateScanValid(nameplate)) then
 			TotemPlates:CreateTotemFrame(nameplate)
 		end
 
@@ -648,10 +657,10 @@ local function NameplateScan(nameplate, ...)
 end
 
 local function NameplateHandler(self, elapsed)
-	if ( NAMEPLATE_THROTTLE_CURRENT > NAMEPLATE_THROTTLE ) then
+	if (NAMEPLATE_THROTTLE_CURRENT > NAMEPLATE_THROTTLE) then
 		NAMEPLATE_NUM = WorldFrame:GetNumChildren()
 
-		if ( NAMEPLATE_NUM ~= NAMEPLATE_NUM_PREVIOUS ) then
+		if (NAMEPLATE_NUM ~= NAMEPLATE_NUM_PREVIOUS) then
 			NameplateScan(WorldFrame:GetChildren())
 			NAMEPLATE_NUM_PREVIOUS = NAMEPLATE_NUM
 		end
@@ -669,10 +678,10 @@ end
 ---------------------------------------------------
 
 local function PLAYER_TARGET_CHANGED_UPDATE(nameplate, ...)
-	if ( nameplate ) then
+	if (nameplate) then
 		local totem = nameplate.gladdyTotemFrame
 
-		if ( totem and totem.active ) then
+		if (totem and totem.active) then
 			local totemName = totem.activeName or (totem.nametext and totem.nametext:GetText())
 			if totemName then
 				TotemPlates:SetTotemAlpha(totem, totemName)
@@ -691,14 +700,14 @@ function TotemPlates:PLAYER_TARGET_CHANGED()
 end
 
 function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
-	if ( Gladdy.db.npTotems ) then
+	if (Gladdy.db.npTotems) then
 		local nameplate = nameplateOrUnit
-		
+
 		-- Handle different call contexts:
 		-- 1. From OnShow hook: nameplateOrUnit is the nameplate frame (self in hook context)
 		-- 2. From event via OnEvent: nameplateOrUnit is unit string like "nameplate1"
 		-- 3. Direct call: nameplateOrUnit is nameplate frame, unit may be passed
-		if ( type(nameplateOrUnit) == "string" ) then
+		if (type(nameplateOrUnit) == "string") then
 			unit = nameplateOrUnit
 			nameplate = C_NamePlate.GetNamePlateForUnit(unit)
 			-- Handle Pulse Timer registration
@@ -707,56 +716,56 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 			-- If called with frame, still try to handle pulse if unit is known/derivable
 			local u = unit or GetUnitFromFrame(nameplateOrUnit)
 			if u then HandleNameplateAdded(u) end
-			
+
 			nameplate = nameplateOrUnit or self
-			if ( not unit ) then
+			if (not unit) then
 				unit = GetUnitFromFrame(nameplate)
 			end
 		end
-		
-		if ( not nameplate ) then return end
+
+		if (not nameplate) then return end
 
 		-- Fix shadowing: ensure we don't treat 'self' (the module) as a nameplate if arguments were nil
-		if ( nameplate == self ) then
+		if (nameplate == self) then
 			return
 		end
 
 		local totem = nameplate.gladdyTotemFrame
-		if ( not totem ) then
+		if (not totem) then
 			TotemPlates:CreateTotemFrame(nameplate)
 			totem = nameplate.gladdyTotemFrame
 		end
 
-		if ( totem ) then
+		if (totem) then
 			-- TurboPlates hides Blizzard elements, so use UnitName instead of nametext:GetText()
 			-- Prioritize unit token identification
 			local nameplateText
-			if ( unit ) then
+			if (unit) then
 				nameplateText = UnitName(unit)
-			elseif ( self.addon == "TurboPlates" and nameplate.namePlateUnitToken ) then
+			elseif (self.addon == "TurboPlates" and nameplate.namePlateUnitToken) then
 				nameplateText = UnitName(nameplate.namePlateUnitToken)
 			end
 			-- Fallback to Blizzard nametext or ElvUI name for non-TurboPlates addons or when unit is missing
-			if ( not nameplateText and totem.nametext ) then
-				if ( totem.nametext.GetText ) then
+			if (not nameplateText and totem.nametext) then
+				if (totem.nametext.GetText) then
 					nameplateText = totem.nametext:GetText()
-				elseif ( type(totem.nametext) == "string" ) then
+				elseif (type(totem.nametext) == "string") then
 					nameplateText = totem.nametext
 				end
 			end
 			-- Fallback to unit name if we have a unit
-			if ( not nameplateText and unit ) then
+			if (not nameplateText and unit) then
 				nameplateText = UnitName(unit)
 			end
-			
+
 			local totemData
-			if ( nameplateText ) then
+			if (nameplateText) then
 				totemData = totemNameTotemData[nameplateText]
-				if ( not totemData ) then
+				if (not totemData) then
 					-- Try case-insensitive scan of totemNameTotemData
 					local lowerName = nameplateText:lower()
 					for name, data in pairs(totemNameTotemData) do
-						if ( name:lower() == lowerName ) then
+						if (name:lower() == lowerName) then
 							totemData = data
 							break
 						end
@@ -764,20 +773,21 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 				end
 			end
 
-			if ( totemData ) then
-				if ( TotemPlates:NameplateTypeValid(totem, unit) ) then
+			if (totemData) then
+				if (TotemPlates:NameplateTypeValid(totem, unit)) then
 					local totemInfo = Gladdy.db.npTotemColors["totem" .. totemData.id]
 
-					if ( totemInfo.enabled ) then
+					if (totemInfo.enabled) then
 						totem.totemIcon:SetTexture(totemData.texture)
-						totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
+						totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b,
+							totemInfo.color.a)
 						totem.totemName:SetText(totemInfo.customText or "")
 
 						TotemPlates:ToggleTotem(totem, true)
 						TotemPlates:ToggleAddon(nameplate)
 						totem.active = totemData
 						local fallbackName
-						if ( totem.nametext ) then
+						if (totem.nametext) then
 							fallbackName = totem.nametext.GetText and totem.nametext:GetText() or totem.nametext
 						end
 						totem.activeName = nameplateText or fallbackName -- Store name for TurboPlates compat
@@ -790,14 +800,14 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 							timestamp[fakeGUID] = { timeStamp = GetTime() }
 							ShowPulse(totem, timestamp[fakeGUID])
 						end
-						
+
 						-- Check if this totem has a duration (like Capacitor Totem)
 						if Gladdy.db.npTotemPulseTimer and totemData.duration then
 							ShowDurationBar(totem, totemData.duration)
 						end
 					else
 						-- If certain totem is disabled, then hide it and the plate depending on setting.
-						if ( totem.active ) then
+						if (totem.active) then
 							TotemPlates:ToggleTotem(totem)
 						end
 
@@ -806,7 +816,7 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 				end
 			else
 				-- Not a totem (or name mismatch), ensure we mistakenly didn't leave it active
-				if ( totem.active ) then
+				if (totem.active) then
 					TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplate)
 				end
 			end
@@ -817,8 +827,8 @@ end
 function TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplateOrUnit)
 	local nameplate
 	local unit
-	
-	if ( type(nameplateOrUnit) == "string" ) then
+
+	if (type(nameplateOrUnit) == "string") then
 		unit = nameplateOrUnit
 		nameplate = C_NamePlate.GetNamePlateForUnit(unit)
 		HandleNameplateRemoved(unit)
@@ -826,7 +836,7 @@ function TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplateOrUnit)
 		-- Try to get unit for removal handler
 		local u = unit or GetUnitFromFrame(nameplateOrUnit)
 		if u then HandleNameplateRemoved(u) end
-		
+
 		nameplate = nameplateOrUnit or self
 		-- Scan activeNameplates to clean up if we can find it
 		for guid, plate in pairs(activeNameplates) do
@@ -837,12 +847,12 @@ function TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplateOrUnit)
 		end
 	end
 
-	if ( not nameplate ) then return end
+	if (not nameplate) then return end
 
 	local totem = nameplate.gladdyTotemFrame
 
-	if ( totem ) then
-		if ( totem.active ) then
+	if (totem) then
+		if (totem.active) then
 			TotemPlates:ToggleTotem(totem)
 			totem.active = nil
 			totem.activeName = nil
@@ -859,11 +869,11 @@ end
 function TotemPlates:PLAYER_ENTERING_WORLD()
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 	self:SetFrameStrata("BACKGROUND") -- Prevent icons from overlapping other frames.
-	
+
 	-- Clear pulse timer data
 	timestamp = {}
 	activeNameplates = {}
-	
+
 	self:UpdateFrameOnce()
 end
 
@@ -874,22 +884,25 @@ end
 ---------------------------------------------------
 
 local function SettingRefresh(nameplate, ...)
-	if ( nameplate ) then
+	if (nameplate) then
 		local totem = nameplate.gladdyTotemFrame
 
-		if ( totem ) then
+		if (totem) then
 			-- For TurboPlates/ElvUI, skip SettingRefresh validation since we don't have unit token here
 			-- The actual validation happens in NAME_PLATE_UNIT_ADDED when event fires
-			local isValid = TotemPlates.addon == "TurboPlates" or TotemPlates.addon == "ElvUI" or TotemPlates:NameplateTypeValid(totem, nil)
-			if ( Gladdy.db.npTotems and isValid ) then
-				if ( nameplate:IsShown() ) then
+			local isValid = TotemPlates.addon == "TurboPlates" or TotemPlates.addon == "ElvUI" or
+			TotemPlates:NameplateTypeValid(totem, nil)
+			if (Gladdy.db.npTotems and isValid) then
+				if (nameplate:IsShown()) then
 					TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 				end
 
-				if ( totem ) then
-					totem:SetSize(Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor, Gladdy.db.npTotemPlatesSize)
+				if (totem) then
+					totem:SetSize(Gladdy.db.npTotemPlatesSize * Gladdy.db.npTotemPlatesWidthFactor,
+						Gladdy.db.npTotemPlatesSize)
 					totem.totemName:SetFont(Gladdy:SMFetch("font", "npTremorFont"), Gladdy.db.npTremorFontSize, "OUTLINE")
-					totem.totemName:SetPoint("TOP", totem, "BOTTOM", Gladdy.db.npTremorFontXOffset, Gladdy.db.npTremorFontYOffset)
+					totem.totemName:SetPoint("TOP", totem, "BOTTOM", Gladdy.db.npTremorFontXOffset,
+						Gladdy.db.npTremorFontYOffset)
 					totem.totemBorder:SetTexture(Gladdy.db.npTotemPlatesBorderStyle)
 				end
 			else
@@ -902,15 +915,15 @@ local function SettingRefresh(nameplate, ...)
 end
 
 function TotemPlates:UpdateFrameOnce()
-	if ( Gladdy.db.npTotems and Gladdy.db.npTotemsShowEnemy ) then
+	if (Gladdy.db.npTotems and Gladdy.db.npTotemsShowEnemy) then
 		SetCVar("nameplateShowEnemyTotems", 1)
 	end
 
-	if ( Gladdy.db.npTotems and Gladdy.db.npTotemsShowFriendly ) then
+	if (Gladdy.db.npTotems and Gladdy.db.npTotemsShowFriendly) then
 		SetCVar("nameplateShowFriendlyTotems", 1)
 	end
 
-	if ( Gladdy.db.npTotems ) then
+	if (Gladdy.db.npTotems) then
 		self:RegisterEvent("PLAYER_TARGET_CHANGED")
 		self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED") -- Always register for pulse timer
 		self:RegisterEvent("NAME_PLATE_UNIT_ADDED") -- Always register for nameplate events
@@ -926,10 +939,10 @@ function TotemPlates:UpdateFrameOnce()
 		self:SetScript("OnEvent", nil)
 	end
 
-	if ( NAMEPLATE_THROTTLE_CURRENT ~= NAMEPLATE_LOGIN ) then
+	if (NAMEPLATE_THROTTLE_CURRENT ~= NAMEPLATE_LOGIN) then
 		SettingRefresh(WorldFrame:GetChildren())
 
-		if ( self.testFrame and self.testFrame:IsShown() ) then
+		if (self.testFrame and self.testFrame:IsShown()) then
 			TotemPlates:TestOnce()
 		end
 	end
@@ -967,35 +980,42 @@ function TotemPlates:CreateTotemFrame(nameplate, test)
 	Name:SetPoint("TOP", Frame, "BOTTOM", Gladdy.db.npTremorFontXOffset, Gladdy.db.npTremorFontYOffset)
 	Frame.totemName = Name
 
-	if ( not test ) then
+	if (not test) then
 		-- Highlight
 		local Highlight = Frame:CreateTexture(nil, "OVERLAY")
 		Highlight:SetTexture("Interface/TargetingFrame/UI-TargetingFrame-BarFill")
-		Highlight:SetPoint("TOPLEFT", Frame, "TOPLEFT", Gladdy.db.npTotemPlatesSize/16, -Gladdy.db.npTotemPlatesSize/16)
-		Highlight:SetPoint("BOTTOMRIGHT", Frame, "BOTTOMRIGHT", -Gladdy.db.npTotemPlatesSize/16, Gladdy.db.npTotemPlatesSize/16)
+		Highlight:SetPoint("TOPLEFT", Frame, "TOPLEFT", Gladdy.db.npTotemPlatesSize / 16, -Gladdy.db.npTotemPlatesSize /
+		16)
+		Highlight:SetPoint("BOTTOMRIGHT", Frame, "BOTTOMRIGHT", -Gladdy.db.npTotemPlatesSize / 16,
+			Gladdy.db.npTotemPlatesSize / 16)
 		Highlight:SetBlendMode("ADD")
 		Highlight:SetAlpha(0)
 		Frame.selectionHighlight = Highlight
 
 		-- References
-		Frame.healthbar = nameplate.healthBar or nameplate.healthbar or (nameplate.UnitFrame and nameplate.UnitFrame.Health)
-		
+		Frame.healthbar = nameplate.healthBar or nameplate.healthbar or
+		(nameplate.UnitFrame and nameplate.UnitFrame.Health)
+
 		-- Always try to find Blizzard regions as fallback, ElvUI often skins them
 		local threatglow, castbar, castbarborder, castbarinterrupt, castbaricon -- Unused
-		local _, healthborder, castborder, castinterrupt, casticon, highlighttexture, nametext, leveltext, bossicon, raidicon, mobicon = nameplate:GetRegions()
-		
-		if ( not Frame.healthbar ) then
+		local _, healthborder, castborder, castinterrupt, casticon, highlighttexture, nametext, leveltext, bossicon, raidicon, mobicon =
+		nameplate:GetRegions()
+
+		if (not Frame.healthbar) then
 			Frame.healthbar, castbar = nameplate:GetChildren()
-			Frame.healthborder, Frame.highlighttexture, Frame.nametext, Frame.leveltext, Frame.bossicon, Frame.raidicon, Frame.mobicon = healthborder, highlighttexture, nametext, leveltext, bossicon, raidicon, mobicon
+			Frame.healthborder, Frame.highlighttexture, Frame.nametext, Frame.leveltext, Frame.bossicon, Frame.raidicon, Frame.mobicon =
+			healthborder, highlighttexture, nametext, leveltext, bossicon, raidicon, mobicon
 			Frame.castbar = castbar -- Save castbar for hiding
 		else
 			-- ElvUI or custom addon structure
-			Frame.nametext = nametext or nameplate.name or (nameplate.UnitFrame and nameplate.UnitFrame.Name) or (nameplate.healthBar and nameplate.healthBar.Name)
+			Frame.nametext = nametext or nameplate.name or (nameplate.UnitFrame and nameplate.UnitFrame.Name) or
+			(nameplate.healthBar and nameplate.healthBar.Name)
 			-- Deep scan if still not found
 			if not Frame.nametext or type(Frame.nametext) == "string" or (type(Frame.nametext) == "table" and not Frame.nametext.GetText) then
 				Frame.nametext = FindFontString(nameplate.UnitFrame or nameplate.healthBar or nameplate)
 			end
-			Frame.healthborder, Frame.highlighttexture, Frame.leveltext, Frame.bossicon, Frame.raidicon, Frame.mobicon = healthborder, highlighttexture, leveltext, bossicon, raidicon, mobicon
+			Frame.healthborder, Frame.highlighttexture, Frame.leveltext, Frame.bossicon, Frame.raidicon, Frame.mobicon =
+			healthborder, highlighttexture, leveltext, bossicon, raidicon, mobicon
 		end
 
 		-- Hooks
@@ -1014,17 +1034,17 @@ end
 
 function TotemPlates:NameplateTypeValid(totemFrame, unit)
 	local friendly
-	
+
 	-- Prioritize unit token Reaction check
-	if ( not unit and totemFrame:GetParent() ) then
+	if (not unit and totemFrame:GetParent()) then
 		unit = GetUnitFromFrame(totemFrame:GetParent())
 	end
-	
-	if ( unit ) then
+
+	if (unit) then
 		friendly = UnitIsFriend("player", unit)
-	elseif ( totemFrame.healthbar ) then
+	elseif (totemFrame.healthbar and totemFrame.healthbar.GetStatusBarColor) then
 		local r, g, b = totemFrame.healthbar:GetStatusBarColor()
-		-- Lenient check for friendly: 
+		-- Lenient check for friendly:
 		-- 1. Pure green (standard)
 		-- 2. Green is dominant
 		-- 3. Blue is dominant (Shaman class color used by ElvUI for shamans/totems)
@@ -1032,39 +1052,39 @@ function TotemPlates:NameplateTypeValid(totemFrame, unit)
 		local isGreen = (g > r and g > b)
 		local isBlue = (b > r and b > g)
 		local isRed = (r > g and r > b)
-		
+
 		friendly = (isGreen or isBlue or (g > 0.5) or (r == 0 and g > 0.9)) and not isRed
 	else
 		return false
 	end
 
-	if ( (Gladdy.db.npTotemsShowFriendly and friendly) or (Gladdy.db.npTotemsShowEnemy and not friendly) ) then
+	if ((Gladdy.db.npTotemsShowFriendly and friendly) or (Gladdy.db.npTotemsShowEnemy and not friendly)) then
 		return true
 	end
 end
 
 function TotemPlates:ToggleTotem(totem, show)
-	if ( show ) then
+	if (show) then
 		totem:Show()
-		if ( not totem.active ) then
+		if (not totem.active) then
 			totem:SetScript("OnUpdate", TotemPlates.OnUpdate)
 		end
 	else
 		totem:Hide()
-		if ( totem.active ) then
+		if (totem.active) then
 			totem:SetScript("OnUpdate", nil)
 		end
 	end
 end
 
 function TotemPlates:GetAddonFrame(nameplate)
-	if ( self.addon == "Kui_Nameplates" ) then
+	if (self.addon == "Kui_Nameplates") then
 		return nameplate.kui
-	elseif ( self.addon == "TidyPlates" ) then
+	elseif (self.addon == "TidyPlates") then
 		return nameplate.extended
-	elseif ( self.addon == "ElvUI" ) then
+	elseif (self.addon == "ElvUI") then
 		return nameplate
-	elseif ( self.addon == "TurboPlates" ) then
+	elseif (self.addon == "TurboPlates") then
 		-- Return myPlate if exists, otherwise nil (liteContainer handled separately)
 		return nameplate.myPlate
 	else
@@ -1076,29 +1096,29 @@ function TotemPlates:ToggleAddon(nameplate, show)
 	local addon = TotemPlates:GetAddonFrame(nameplate)
 	local totemFrame = nameplate.gladdyTotemFrame
 
-	if ( self.addon ) then
-		if ( addon ) then
+	if (self.addon) then
+		if (addon) then
 			local isKui = self.addon == "Kui_Nameplates"
 			local isTurbo = self.addon == "TurboPlates"
 
-			if ( show ) then
+			if (show) then
 				addon.Show = nil
 
-				if ( self.addon == "ElvUI" ) then
+				if (self.addon == "ElvUI") then
 					local elvUIActive = false
-					if addon.UnitFrame then 
-						addon.UnitFrame:Show() 
+					if addon.UnitFrame then
+						addon.UnitFrame:Show()
 						if addon.UnitFrame.Health then addon.UnitFrame.Health:Show() end
 						if addon.UnitFrame.Name then addon.UnitFrame.Name:Show() end
 						-- ElvUI level is often hidden, do not force show
 						elvUIActive = true
 					end
-					if addon.healthBar then 
-						addon.healthBar:Show() 
+					if addon.healthBar then
+						addon.healthBar:Show()
 						elvUIActive = true
 					end
 					addon:SetAlpha(1)
-					
+
 					-- Restore Blizzard regions ONLY if ElvUI is not managing the frame
 					if totemFrame and not elvUIActive then
 						-- Fallback for standard hiding:
@@ -1112,45 +1132,45 @@ function TotemPlates:ToggleAddon(nameplate, show)
 						if totemFrame.raidicon then totemFrame.raidicon:SetAlpha(1) end
 						if totemFrame.mobicon then totemFrame.mobicon:Show() end
 					end
-				elseif ( isKui ) then
+				elseif (isKui) then
 					addon.currentAlpha = 1
 					addon.lastAlpha = 0
 					addon.DoShow = 1
-				elseif ( isTurbo ) then
+				elseif (isTurbo) then
 					-- TurboPlates: Don't show here - plate is being removed.
 					-- If plate reappears for non-totem, FullPlateUpdate will show it.
 				else
 					addon:Show()
 				end
 			else
-				if ( isKui ) then
+				if (isKui) then
 					addon.currentAlpha = 1
 					addon.lastAlpha = 1
 					addon.DoShow = nil
-				elseif ( isTurbo ) then
+				elseif (isTurbo) then
 					-- TurboPlates: hide myPlate if it exists
 					if addon then addon:Hide() end
 					-- Also hide liteContainer (name-only mode)
 					if nameplate.liteContainer then nameplate.liteContainer:Hide() end
 				end
 
-				if ( self.addon == "ElvUI" ) then
+				if (self.addon == "ElvUI") then
 					-- For ElvUI, we hide the main healthbar group and sub-elements
-					if addon.UnitFrame then 
-						addon.UnitFrame:Hide() 
+					if addon.UnitFrame then
+						addon.UnitFrame:Hide()
 						addon.UnitFrame:SetAlpha(0)
 					end
-					if addon.healthBar then 
-						addon.healthBar:Hide() 
+					if addon.healthBar then
+						addon.healthBar:Hide()
 						addon.healthBar:SetAlpha(0)
 					end
-					
+
 					-- FORCE HIDE all Blizzard elements (Non-destructive)
 					HideBlizzardElements(nameplate)
-				elseif ( not isTurbo ) then
+				elseif (not isTurbo) then
 					-- Standard Blizzard or other addons
 					HideBlizzardElements(nameplate)
-					
+
 					addon:Hide()
 					addon.Show = TotemPlates.void
 				end
@@ -1158,7 +1178,7 @@ function TotemPlates:ToggleAddon(nameplate, show)
 		end
 	else
 		-- Standard Blizzard Logic
-		if ( show ) then
+		if (show) then
 			RestoreBlizzardElements(nameplate)
 		else
 			HideBlizzardElements(nameplate)
@@ -1172,28 +1192,28 @@ function TotemPlates.OnUpdate(self, elapsed)
 	if not nameplateName and self.nametext and self.nametext.GetText then
 		nameplateName = self.nametext:GetText()
 	end
-	
+
 	-- Validation: If we are not TurboPlates (standard frames), check if the text changed.
 	-- This fixes stale text issues where a Player plate is initialized as a Totem plate because
 	-- the text hadn't updated yet from a previous usage.
-	if ( self.active and self.nametext ) then
+	if (self.active and self.nametext) then
 		local currentText
-		if ( self.nametext.GetText ) then
+		if (self.nametext.GetText) then
 			currentText = self.nametext:GetText()
-		elseif ( type(self.nametext) == "string" ) then
+		elseif (type(self.nametext) == "string") then
 			currentText = self.nametext
 		end
-		
-		-- self.activeName holds the name we matched against. 
+
+		-- self.activeName holds the name we matched against.
 		-- If current text differs (and isn't nil), we might need to reset.
-		if ( currentText and currentText ~= self.activeName ) then
-			-- Re-evaluate this nameplate. 
+		if (currentText and currentText ~= self.activeName) then
+			-- Re-evaluate this nameplate.
 			TotemPlates:NAME_PLATE_UNIT_ADDED(self:GetParent())
 			return
 		end
 	end
 
-	if ( self.active and nameplateName and (nameplateName == NAMEPLATE_TARGET or UnitName("mouseover") == nameplateName or not NAMEPLATE_TARGET) ) then
+	if (self.active and nameplateName and (nameplateName == NAMEPLATE_TARGET or UnitName("mouseover") == nameplateName or not NAMEPLATE_TARGET)) then
 		self.selectionHighlight:SetAlpha(.25)
 	else
 		self.selectionHighlight:SetAlpha(0)
@@ -1201,9 +1221,9 @@ function TotemPlates.OnUpdate(self, elapsed)
 end
 
 function TotemPlates:SetTotemAlpha(totem, nameplateText)
-	if ( NAMEPLATE_TARGET ) then
-		if ( NAMEPLATE_TARGET == nameplateText ) then -- is target
-			if ( Gladdy.db.npTotemPlatesAlphaAlwaysTargeted ) then
+	if (NAMEPLATE_TARGET) then
+		if (NAMEPLATE_TARGET == nameplateText) then -- is target
+			if (Gladdy.db.npTotemPlatesAlphaAlwaysTargeted) then
 				totem:SetAlpha(Gladdy.db.npTotemColors["totem" .. totem.active.id].alpha)
 			else
 				totem:SetAlpha(1)
@@ -1212,7 +1232,7 @@ function TotemPlates:SetTotemAlpha(totem, nameplateText)
 			totem:SetAlpha(Gladdy.db.npTotemColors["totem" .. totem.active.id].alpha)
 		end
 	else -- no target
-		if ( Gladdy.db.npTotemPlatesAlphaAlways ) then
+		if (Gladdy.db.npTotemPlatesAlphaAlways) then
 			totem:SetAlpha(Gladdy.db.npTotemColors["totem" .. totem.active.id].alpha)
 		else
 			totem:SetAlpha(0.95)
@@ -1229,8 +1249,8 @@ end
 function TotemPlates:TestOnce()
 	local test = self.testFrame
 
-	if ( Gladdy.db.npTotems ) then
-		if ( not test ) then
+	if (Gladdy.db.npTotems) then
+		if (not test) then
 			test = CreateFrame("Frame")
 			test:SetSize(1, 32)
 			test:SetPoint("CENTER", UIParent, "CENTER", 0, -175)
@@ -1255,22 +1275,21 @@ function TotemPlates:TestOnce()
 		totem.totemBorder:SetVertexColor(totemInfo.color.r, totemInfo.color.g, totemInfo.color.b, totemInfo.color.a)
 
 		test:Show()
-	elseif ( test ) then
+	elseif (test) then
 		test:Hide()
 	end
 end
 
 function TotemPlates:Reset()
 	local test = self.testFrame
-	if ( test ) then
+	if (test) then
 		test:Hide()
 	end
-	
+
 	-- Clear pulse timer data
 	timestamp = {}
 	activeNameplates = {}
 end
-
 
 ---------------------------------------------------
 
@@ -1439,7 +1458,7 @@ function TotemPlates:GetOptions()
 							order = 23,
 							get = function()
 								local alpha, i = nil, 1
-								for _,v in pairs(Gladdy.dbi.profile.npTotemColors) do
+								for _, v in pairs(Gladdy.dbi.profile.npTotemColors) do
 									if i == 1 then
 										alpha = v.alpha
 										i = i + 1
@@ -1452,7 +1471,7 @@ function TotemPlates:GetOptions()
 								return alpha
 							end,
 							set = function(_, value)
-								for _,v in pairs(Gladdy.dbi.profile.npTotemColors) do
+								for _, v in pairs(Gladdy.dbi.profile.npTotemColors) do
 									v.alpha = value
 								end
 								Gladdy:UpdateFrame()
@@ -1484,7 +1503,7 @@ function TotemPlates:GetOptions()
 							get = function()
 								local color
 								local i = 1
-								for _,v in pairs(Gladdy.dbi.profile.npTotemColors) do
+								for _, v in pairs(Gladdy.dbi.profile.npTotemColors) do
 									if i == 1 then
 										color = v.color
 										i = i + 1
@@ -1497,7 +1516,7 @@ function TotemPlates:GetOptions()
 								return color.r, color.g, color.b, color.a
 							end,
 							set = function(_, r, g, b, a)
-								for _,v in pairs(Gladdy.dbi.profile.npTotemColors) do
+								for _, v in pairs(Gladdy.dbi.profile.npTotemColors) do
 									v.color.r = r
 									v.color.g = g
 									v.color.b = b

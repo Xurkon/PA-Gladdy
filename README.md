@@ -1,6 +1,6 @@
 # Gladdy (Ascension Edition)
 
-![Version](https://img.shields.io/badge/version-v2.13--Ascension-blue.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-v2.14--Ascension-blue.svg?style=for-the-badge)
 ![Downloads](https://img.shields.io/github/downloads/Xurkon/PA-Gladdy/total?style=for-the-badge&color=e67e22)
 [![Documentation](https://img.shields.io/badge/Documentation-View%20Docs-58a6ff?style=for-the-badge)](https://xurkon.github.io/PA-Gladdy/)
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/Xurkon)
