@@ -1,13 +1,13 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.14-Ascension
+**Current Version:** v2.15-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes), Surm (TotemPlates & TurboPlates Integration)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
 
 ---
 
-## v2.14-Ascension (Release)
+## v2.15-Ascension (Release)
 - **Critical Bug Fix**: Fixed a crash that occurred when entering arena, caused by a GetStatusBarColor nil value error in the TotemPlates module.
 
 ### Technical Details
