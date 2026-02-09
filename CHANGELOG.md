@@ -1,11 +1,20 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.13-Ascension
+**Current Version:** v2.14-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes), Surm (TotemPlates & TurboPlates Integration)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
 
 ---
+
+## v2.14-Ascension (Release)
+- **Critical Bug Fix**: Fixed a crash that occurred when entering arena, caused by a GetStatusBarColor nil value error in the TotemPlates module.
+
+### Technical Details
+- **Error**: Attempt to call method 'GetStatusBarColor' (a nil value) at TotemPlates.lua:1026
+- **Cause**: The code was attempting to call GetStatusBarColor() on healthbar frames that didn't have this method.
+- **Solution**: Added method existence validation before calling GetStatusBarColor() in the NameplateTypeValid function.
+- **Context**: Different nameplate addons (Blizzard UI, ElvUI, TurboPlates, etc.) provide healthbar frames with different APIs. Not all of them implement the StatusBar interface. This fix adds a check to ensure the method exists before attempting to call it.
 
 ## v2.13-Ascension (Release)
 - **TotemPlates Enhancements**: Improved totem detection and display logic.

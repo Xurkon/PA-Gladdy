@@ -13,11 +13,14 @@ local Gladdy = LibStub("Gladdy")
 local LibClassAuras = LibStub("LibClassAuras-1.0")
 local L = Gladdy.L
 
-Gladdy.TIMER_FORMAT = { tenths = "tenths", seconds = "seconds",
-                       values = {
-                           ["tenths"] = "xx:xx Miliseconds",
-                           ["seconds"] = "xx Seconds"
-                       }}
+Gladdy.TIMER_FORMAT = {
+    tenths = "tenths",
+    seconds = "seconds",
+    values = {
+        ["tenths"] = "xx:xx Miliseconds",
+        ["seconds"] = "xx Seconds"
+    }
+}
 
 function Gladdy:FormatTimer(fontString, timeLeft, milibreakpoint, showSeconds)
     if timeLeft < 0 then
@@ -30,7 +33,8 @@ function Gladdy:FormatTimer(fontString, timeLeft, milibreakpoint, showSeconds)
     else
         if time >= 60 then
             if showSeconds then
-                fontString:SetText(floor(timeLeft / 60) .. ":" .. str_format("%02.f", floor(timeLeft - floor(timeLeft / 60) * 60)))
+                fontString:SetText(floor(timeLeft / 60) ..
+                    ":" .. str_format("%02.f", floor(timeLeft - floor(timeLeft / 60) * 60)))
             else
                 fontString:SetText(ceil(ceil(time / 60)) .. "m")
             end
@@ -55,7 +59,7 @@ Gladdy.defaults = {
         bottomMargin = 2,
         statusbarBorderOffset = 6,
         timerFormat = Gladdy.TIMER_FORMAT.tenths,
-        backgroundColor = {r = 0, g = 0, b = 0, a = 0},
+        backgroundColor = { r = 0, g = 0, b = 0, a = 0 },
         newLayout = false,
         showMover = true,
         minimap = {
@@ -120,11 +124,13 @@ function Gladdy:colorOption(params)
     local defaults = {
         get = function(info)
             local key = info.arg or info[#info]
-            return Gladdy.dbi.profile[key].r, Gladdy.dbi.profile[key].g, Gladdy.dbi.profile[key].b, Gladdy.dbi.profile[key].a
+            return Gladdy.dbi.profile[key].r, Gladdy.dbi.profile[key].g, Gladdy.dbi.profile[key].b,
+                Gladdy.dbi.profile[key].a
         end,
         set = function(info, r, g, b, a)
             local key = info.arg or info[#info]
-            Gladdy.dbi.profile[key].r, Gladdy.dbi.profile[key].g, Gladdy.dbi.profile[key].b, Gladdy.dbi.profile[key].a = r, g, b, a
+            Gladdy.dbi.profile[key].r, Gladdy.dbi.profile[key].g, Gladdy.dbi.profile[key].b, Gladdy.dbi.profile[key].a =
+                r, g, b, a
             Gladdy:UpdateFrame()
         end,
     }
@@ -156,7 +162,8 @@ local function getColorOpt(info)
 end
 local function setColorOpt(info, r, g, b, a)
     local key = info.arg or info[#info]
-    Gladdy.dbi.profile[key].r, Gladdy.dbi.profile[key].g, Gladdy.dbi.profile[key].b, Gladdy.dbi.profile[key].a = r, g, b, a
+    Gladdy.dbi.profile[key].r, Gladdy.dbi.profile[key].g, Gladdy.dbi.profile[key].b, Gladdy.dbi.profile[key].a = r, g, b,
+        a
     Gladdy:UpdateFrame()
 end
 
@@ -284,9 +291,9 @@ function Gladdy:SetupOptions()
             },
             version = {
                 order = 5,
-                width = 3,
+                width = "full",
                 type = "description",
-                name = "     " .. Gladdy.version .. "   |cffaaaaaaBased on v2.23   |cff707070Backported by Tsoukie"
+                name = "     " .. Gladdy.version .. "   |cffaaaaaaBased on v2.23   |cff707070Maintained by Xurkon"
             },
             general = {
                 type = "group",
@@ -342,7 +349,7 @@ function Gladdy:SetupOptions()
                                     pixelPerfect = {
                                         type = "toggle",
                                         name = L["Pixel Perfect Scale"],
-                                        desc = L["Enables Pixel Perfect Scale - disables manual "].. L["Frame scale"],
+                                        desc = L["Enables Pixel Perfect Scale - disables manual "] .. L["Frame scale"],
                                         order = 4,
                                     },
                                     frameScale = {
@@ -420,7 +427,7 @@ function Gladdy:SetupOptions()
                                             Gladdy.db.racialDisableCircle = value
                                             Gladdy:UpdateFrame()
                                         end,
-                                        width= "full",
+                                        width = "full",
                                     },
                                     cooldownCircleAlpha = {
                                         type = "range",
@@ -531,7 +538,7 @@ function Gladdy:SetupOptions()
                                             end
                                         end,
                                         set = function(info, r, g, b, a)
-                                            local rgb = {r = r, g = g, b = b, a = a}
+                                            local rgb = { r = r, g = g, b = b, a = a }
                                             Gladdy.db.healthBarFontColor = rgb
                                             Gladdy.db.powerBarFontColor = rgb
                                             Gladdy.db.castBarFontColor = rgb
@@ -559,7 +566,7 @@ function Gladdy:SetupOptions()
                                             end
                                         end,
                                         set = function(info, r, g, b, a)
-                                            local rgb = {r = r, g = g, b = b, a = a}
+                                            local rgb = { r = r, g = g, b = b, a = a }
                                             Gladdy.db.auraFontColor = rgb
                                             Gladdy.db.buffsFontColor = rgb
                                             Gladdy.db.cooldownFontColor = rgb
@@ -649,7 +656,7 @@ function Gladdy:SetupOptions()
                                             end
                                         end,
                                         set = function(info, r, g, b, a)
-                                            local rgb = {r = r, g = g, b = b, a = a}
+                                            local rgb = { r = r, g = g, b = b, a = a }
                                             Gladdy.db.auraBuffBorderColor = rgb
                                             Gladdy.db.auraDebuffBorderColor = rgb
                                             Gladdy.db.buffsBorderColor = rgb
@@ -700,7 +707,7 @@ function Gladdy:SetupOptions()
                                             Gladdy.db.petHealthBarTexture = value
                                             Gladdy:UpdateFrame()
                                         end,
-                                        width= "full",
+                                        width = "full",
                                     },
                                     statusbarBorderStyle = {
                                         type = "select",
@@ -731,7 +738,8 @@ function Gladdy:SetupOptions()
                                     statusbarBorderOffset = Gladdy:option({
                                         type = "range",
                                         name = L["Statusbar border offset divider (smaller is higher offset)"],
-                                        desc = L["Offset of border to statusbar (in case statusbar shows beyond the border)"],
+                                        desc = L
+                                            ["Offset of border to statusbar (in case statusbar shows beyond the border)"],
                                         min = 1,
                                         max = 20,
                                         step = 0.1,
@@ -756,7 +764,7 @@ function Gladdy:SetupOptions()
                                             end
                                         end,
                                         set = function(info, r, g, b, a)
-                                            local rgb = {r = r, g = g, b = b, a = a}
+                                            local rgb = { r = r, g = g, b = b, a = a }
                                             Gladdy.db.castBarBorderColor = rgb
                                             Gladdy.db.healthBarBorderColor = rgb
                                             Gladdy.db.powerBarBorderColor = rgb
@@ -800,7 +808,6 @@ function Gladdy:SetupOptions()
     LibStub("AceConfig-3.0"):RegisterOptionsTable("Gladdy_blizz", options)
     LibStub("AceConfigDialog-3.0"):AddToBlizOptions("Gladdy_blizz", "Gladdy")
     LibStub("AceConfig-3.0"):RegisterOptionsTable("Gladdy", self.options)
-
 end
 
 function Gladdy:ShowOptions()
@@ -816,11 +823,11 @@ function Gladdy:GetAuras(auraType)
             type = "execute",
             func = function(info)
                 if auraType == AURA_TYPE_DEBUFF then
-                    for k,v in pairs(Gladdy.defaults.profile.trackedDebuffs) do
+                    for k, v in pairs(Gladdy.defaults.profile.trackedDebuffs) do
                         Gladdy.dbi.profile.trackedDebuffs[k] = true
                     end
                 else
-                    for k,v in pairs(Gladdy.defaults.profile.trackedBuffs) do
+                    for k, v in pairs(Gladdy.defaults.profile.trackedBuffs) do
                         Gladdy.dbi.profile.trackedBuffs[k] = true
                     end
                 end
@@ -833,11 +840,11 @@ function Gladdy:GetAuras(auraType)
             type = "execute",
             func = function(info)
                 if auraType == AURA_TYPE_DEBUFF then
-                    for k,v in pairs(Gladdy.defaults.profile.trackedDebuffs) do
+                    for k, v in pairs(Gladdy.defaults.profile.trackedDebuffs) do
                         Gladdy.dbi.profile.trackedDebuffs[k] = false
                     end
                 else
-                    for k,v in pairs(Gladdy.defaults.profile.trackedBuffs) do
+                    for k, v in pairs(Gladdy.defaults.profile.trackedBuffs) do
                         Gladdy.dbi.profile.trackedBuffs[k] = false
                     end
                 end
@@ -919,11 +926,12 @@ function Gladdy:GetAuras(auraType)
     local defaultDebuffs = {}
     local assignForClass = function(class)
         local args = {}
-        local classSpells = auraType == AURA_TYPE_DEBUFF and LibClassAuras.GetClassDebuffs(class) or LibClassAuras.GetClassBuffs(class)
+        local classSpells = auraType == AURA_TYPE_DEBUFF and LibClassAuras.GetClassDebuffs(class) or
+            LibClassAuras.GetClassBuffs(class)
         table.sort(classSpells, function(a, b)
             return a.name:upper() < b.name:upper()
         end)
-        for i=1, #classSpells do
+        for i = 1, #classSpells do
             local _, _, texture = GetSpellInfo(classSpells[i].id[#classSpells[i].id])
             if classSpells[i].texture then
                 texture = classSpells[i].texture
