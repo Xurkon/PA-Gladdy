@@ -307,7 +307,10 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 						totem.totemName:SetText(totemInfo.customText or "")
 
 						TotemPlates:ToggleTotem(totem, true)
-						TotemPlates:ToggleAddon(nameplate)
+						-- Skip ToggleAddon for ElvUI — ElvUI manages its own nameplate visibility
+						if ( self.addon ~= "ElvUI" ) then
+							TotemPlates:ToggleAddon(nameplate, true)
+						end
 						totem.active = totemData
 
 						TotemPlates:SetTotemAlpha(totem, nameplateText)
@@ -317,7 +320,10 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplate)
 							TotemPlates:ToggleTotem(totem)
 						end
 
-						TotemPlates:ToggleAddon(nameplate, not Gladdy.db.npTotemsHideDisabledTotems)
+						-- Skip ToggleAddon for ElvUI — ElvUI manages its own nameplate visibility
+						if ( self.addon ~= "ElvUI" ) then
+							TotemPlates:ToggleAddon(nameplate, not Gladdy.db.npTotemsHideDisabledTotems)
+						end
 					end
 				end
 			end
@@ -338,7 +344,10 @@ function TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplate)
 			totem.active = nil
 		end
 
-		TotemPlates:ToggleAddon(nameplate, true)
+		-- Skip ToggleAddon for ElvUI — ElvUI manages its own nameplate visibility
+		if ( self.addon ~= "ElvUI" ) then
+			TotemPlates:ToggleAddon(nameplate, true)
+		end
 	end
 end
 
