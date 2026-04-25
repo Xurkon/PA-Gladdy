@@ -1,9 +1,35 @@
 # PA-Gladdy Changelog
 
-**Current Version:** v2.15-Ascension
+**Current Version:** v2.16-Ascension
 **Ascension Port Credits:** Hutsh (Initial Backport), Xurkon (Optimizations & Critical Fixes), Surm (TotemPlates & TurboPlates Integration)
 
 This changelog documents the complete history of changes, hotfixes, and optimizations applied to make Gladdy fully compatible with Project Ascension.
+
+---
+
+## v2.16-Ascension (Release)
+
+### Critical Bug Fix: Nameplate Detachment During Spam
+
+Fixed a catastrophic nameplate detachment bug triggered by **rapidly spamming the show/hide nameplates keybind**. Previously, nameplates (health bar, name, level) would detach from their units and float in mid-air after repeated show/hide cycles. This affected all nameplates — enemies and friendlies — and occurred regardless of whether the unit was a shaman totem.
+
+### Root Causes Fixed
+
+1. **ElvUI Detection Tightened** (`Initialize()`): The module was selecting ElvUI integration mode based on `_G.ElvUI` existing as a dummy compatibility global, even when real ElvUI nameplates were not active. Detection now requires `E.private.nameplates.enable` to be true.
+
+2. **ToggleAddon Polarity Fixed** (`NAME_PLATE_UNIT_ADDED`): When a totem became active, Gladdy called `ToggleAddon(nameplate, true)` — the show/restore path — instead of the hide path. Fixed to `ToggleAddon(nameplate, false)`.
+
+3. **ElvUI Show Handler Protected** (`ToggleAddon`): The show path was unconditionally setting `addon.Show = nil` even for ElvUI-managed frames, corrupting ElvUI's own Show method. ElvUI frames are now excluded from this mutation.
+
+4. **ElvUI Hide Path Protected** (`ToggleAddon`): The ElvUI hide branch was calling `HideBlizzardElements(nameplate)`, which reparents frame children to a hidden frame. This corrupted ElvUI's internal frame hierarchy. Call removed for ElvUI.
+
+5. **Spam Guard Added** (`NAME_PLATE_UNIT_REMOVED`): During rapid ADD/REMOVE spam, `OnHide` fires for nameplates WoW has already hidden. `RestoreBlizzardElements` was running on these already-hidden frames with stale captured state from prior spam cycles, causing the fallback reparenting path to visually detach nameplates. Added `nameplate:IsShown()` guard before calling `ToggleAddon`.
+
+### Technical Details
+
+- **Files Modified**: `Modules/TotemPlates.lua`
+- **Spam Mechanism**: Rapid show/hide cycling caused `HideBlizzardElements` and `RestoreBlizzardElements` to get out of sync on `_gladdyBlizzHidden` guard state, leaving `_originalStates` stale with `hiddenFrame` as the captured parent, triggering the fallback `SetParent` path that visually detaches children.
+- **Ascension Compatibility**: Issue manifested with Ascension's native nameplate system due to the loose `_G.ElvUI` detection picking up compatibility shim globals.
 
 ---
 

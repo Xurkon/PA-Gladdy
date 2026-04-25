@@ -580,8 +580,11 @@ function TotemPlates:Initialize()
 		self.addon = "TidyPlates"
 	elseif (IsAddOnLoaded("TurboPlates")) then
 		self.addon = "TurboPlates"
-	elseif (IsAddOnLoaded("ElvUI") or _G.ElvUI) then
-		self.addon = "ElvUI"
+	elseif (IsAddOnLoaded("ElvUI")) then
+		local E = _G.ElvUI and unpack(_G.ElvUI)
+		if (E and E.private and E.private.nameplates and E.private.nameplates.enable) then
+			self.addon = "ElvUI"
+		end
 	end
 
 	TotemPlates.void = function() end
@@ -809,7 +812,7 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 						-- replaced with a no-op. The trackedUnit check above already
 						-- handles ghosting on recycled nameplates.
 						if ( self.addon ~= "ElvUI" ) then
-							TotemPlates:ToggleAddon(nameplate, true)
+							TotemPlates:ToggleAddon(nameplate, false)
 						end
 						totem.active = totemData
 						totem.trackedUnit = unit
@@ -893,11 +896,13 @@ function TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplateOrUnit)
 		HidePulse(totem)
 		HideDurationBar(totem)
 
-		-- For ElvUI: Only clean up our totem frame. Do NOT call ToggleAddon
-		-- because ElvUI manages its own nameplate regions and will re-show them
-		-- on UNIT_ADDED. Calling ToggleAddon here to re-expose regions causes
-		-- ghost plates (zombie nameplates that outlive their unit).
-		if ( self.addon ~= "ElvUI" ) then
+		-- Spam guard: skip restoring the nameplate if it is already hidden.
+		-- During rapid ADD/REMOVE spam, OnHide fires for a nameplate that WoW
+		-- has already hidden via CVar. Calling RestoreBlizzardElements here
+		-- can corrupt frame state (children reparented to hiddenFrame as fallback)
+		-- and cause the nameplate to visually detach from its unit.
+		-- If the nameplate is already hidden, let WoW handle it — do not touch it.
+		if ( nameplate:IsShown() and self.addon ~= "ElvUI" ) then
 			TotemPlates:ToggleAddon(nameplate, true)
 		end
 	end
@@ -1139,7 +1144,9 @@ function TotemPlates:ToggleAddon(nameplate, show)
 			local isTurbo = self.addon == "TurboPlates"
 
 			if (show) then
-				addon.Show = nil
+				if (self.addon ~= "ElvUI") then
+					addon.Show = nil
+				end
 
 				if (self.addon == "ElvUI") then
 					local elvUIActive = false
@@ -1201,9 +1208,6 @@ function TotemPlates:ToggleAddon(nameplate, show)
 						addon.healthBar:Hide()
 						addon.healthBar:SetAlpha(0)
 					end
-
-					-- FORCE HIDE all Blizzard elements (Non-destructive)
-					HideBlizzardElements(nameplate)
 				elseif (not isTurbo) then
 					-- Standard Blizzard or other addons
 					HideBlizzardElements(nameplate)
