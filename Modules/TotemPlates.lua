@@ -736,6 +736,24 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 			totem = nameplate.gladdyTotemFrame
 		end
 
+		-- ElvUI: Detect recycled nameplate.
+		-- When a unit dies as a totem and a new unit appears on the same
+		-- nameplate, UNIT_REMOVED never fires (corpses don't fire it), so
+		-- the old totem frame persists with stale state. The nameplate's unit
+		-- will have changed but gladdyTotemFrame still references the old totem.
+		-- Hide the stale frame so it cannot ghost onto the new unit.
+		if ( self.addon == "ElvUI" and totem ) then
+			local currentUnit = unit or nameplate.unit
+			local trackedUnit = totem.trackedUnit
+			if ( currentUnit and trackedUnit and currentUnit ~= trackedUnit ) then
+				-- Nameplate was recycled for a different unit — hide stale totem
+				totem.active = nil
+				totem.trackedUnit = nil
+				totem:Hide()
+				-- Do NOT early-return; a fresh totem will be set up below
+			end
+		end
+
 		if (totem) then
 			-- TurboPlates hides Blizzard elements, so use UnitName instead of nametext:GetText()
 			-- Prioritize unit token identification
@@ -784,8 +802,17 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 						totem.totemName:SetText(totemInfo.customText or "")
 
 						TotemPlates:ToggleTotem(totem, true)
-						TotemPlates:ToggleAddon(nameplate)
+						-- For ElvUI: Do NOT call ToggleAddon here.
+						-- ElvUI manages its own nameplate region visibility.
+						-- Calling ToggleAddon (which manipulates UnitFrame.Show) causes
+						-- frames to detach/float because ElvUI's Show handler gets
+						-- replaced with a no-op. The trackedUnit check above already
+						-- handles ghosting on recycled nameplates.
+						if ( self.addon ~= "ElvUI" ) then
+							TotemPlates:ToggleAddon(nameplate, true)
+						end
 						totem.active = totemData
+						totem.trackedUnit = unit
 						local fallbackName
 						if (totem.nametext) then
 							fallbackName = totem.nametext.GetText and totem.nametext:GetText() or totem.nametext
@@ -811,7 +838,11 @@ function TotemPlates:NAME_PLATE_UNIT_ADDED(nameplateOrUnit, unit)
 							TotemPlates:ToggleTotem(totem)
 						end
 
-						TotemPlates:ToggleAddon(nameplate, not Gladdy.db.npTotemsHideDisabledTotems)
+						-- For ElvUI: Only hide our totem icon, not ElvUI's internal frames.
+						-- ElvUI manages its own nameplate regions.
+						if ( self.addon ~= "ElvUI" ) then
+							TotemPlates:ToggleAddon(nameplate, not Gladdy.db.npTotemsHideDisabledTotems)
+						end
 					end
 				end
 			else
@@ -862,7 +893,13 @@ function TotemPlates:NAME_PLATE_UNIT_REMOVED(nameplateOrUnit)
 		HidePulse(totem)
 		HideDurationBar(totem)
 
-		TotemPlates:ToggleAddon(nameplate, true)
+		-- For ElvUI: Only clean up our totem frame. Do NOT call ToggleAddon
+		-- because ElvUI manages its own nameplate regions and will re-show them
+		-- on UNIT_ADDED. Calling ToggleAddon here to re-expose regions causes
+		-- ghost plates (zombie nameplates that outlive their unit).
+		if ( self.addon ~= "ElvUI" ) then
+			TotemPlates:ToggleAddon(nameplate, true)
+		end
 	end
 end
 
