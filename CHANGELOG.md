@@ -130,3 +130,6 @@ Fixed a catastrophic nameplate detachment bug triggered by **rapidly spamming th
 
 ## v99.99.99-relaytest [2026-05-03]
 - Relay test
+
+## v99.99.99-latesttest [2026-05-03]
+- Latest relay test
