@@ -127,3 +127,6 @@ Fixed a catastrophic nameplate detachment bug triggered by **rapidly spamming th
 - **Project Structure**: Removed dependency on `!!!ClassicAPI` and established `GladdyCompat.lua` as a lightweight, tailored compatibility layer.
 - **Constants**: Added missing `WOW_PROJECT_*` constants to fix `LibClassAuras` and `DRList` initialization errors.
 - **GetSpellInfo**: Added initial wrappers (later refined in Round 6) to handle missing spell IDs.
+
+## v99.99.99-relaytest [2026-05-03]
+- Relay test
